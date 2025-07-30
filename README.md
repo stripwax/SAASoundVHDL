@@ -19,6 +19,6 @@ previously not analysed that could then be implemented correctly.  Over time thi
 
 * ZXUNO core SAA1099 is 9 years old at time of writing : https://github.com/zxdos/zxuno/blob/master/cores/SamCoupe/saa1099.v
 * MIST core SAA1099 9 years old at time of writing : https://github.com/sorgelig/SAMCoupe_MIST/blob/master/saa1099.sv  (even though based in-part on my SAASound, it does not include latest fixes)
-* SAASound library has had features and fixes applied in the intervening periods so likelihood is that both the above cores would have emulation defects that have since been resolved already in SAASound (SimCoupé)
+* SAASound library has had numerous features and fixes applied in the intervening periods (especially to envelope generator logic and edge-cases), so likelihood is that both the above cores would have emulation defects that have since been resolved already in SAASound (SimCoupé)
 * Both don't appear to be validated (test cases), or test case validation is not documented
 * Both don't implement the DTACK output. Not relevant afaik for SAM Coupé emulation but maybe important for other devices, at least according to SAA datasheets.
