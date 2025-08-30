@@ -85,21 +85,21 @@ The following table then defines the values for each step:
 |step|value|
 |----|-----|
 |0-3  | =0  |
-|4-7  | =C<sub>0</sub> |
-|8-11 | =C<sub>1</sub> |
-|12-15| =C<sub>1</sub> |
-|16-19| =C<sub>3</sub> |
-|20-23| =C<sub>3</sub> |
-|24-27| =C<sub>3</sub> |
-|38-31| =C<sub>3</sub> |
-|32-35| =C<sub>2</sub> |
-|36-39| =C<sub>2</sub> |
-|40-43| =C<sub>2</sub> |
-|44-47| =C<sub>2</sub> |
-|48-51| =C<sub>3</sub> |
-|52-55| =C<sub>3</sub> |
-|56-59| =C<sub>3</sub> |
-|60-63| =C<sub>3</sub> |
+|4-7  | =A<sub>0</sub> |
+|8-11 | =A<sub>1</sub> |
+|12-15| =A<sub>1</sub> |
+|16-19| =A<sub>3</sub> |
+|20-23| =A<sub>3</sub> |
+|24-27| =A<sub>3</sub> |
+|38-31| =A<sub>3</sub> |
+|32-35| =A<sub>2</sub> |
+|36-39| =A<sub>2</sub> |
+|40-43| =A<sub>2</sub> |
+|44-47| =A<sub>2</sub> |
+|48-51| =A<sub>3</sub> |
+|52-55| =A<sub>3</sub> |
+|56-59| =A<sub>3</sub> |
+|60-63| =A<sub>3</sub> |
 
 
 Similarly, for the ENVELOPE table - treating it as its own standalone thing for now:
@@ -138,10 +138,10 @@ If you do all this, you can simplify everything to quite a small number of logic
 
 For example, for AMPLITUDE:
 
-Step 4-7 matches the rule: C<sub>2</sub> AND NOT (C<sub>5</sub> OR C<sub>4</sub> OR C<sub>3</sub>)
+Step 4-7 matches the rule: A<sub>0</sub> AND C<sub>2</sub> AND NOT (C<sub>5</sub> OR C<sub>4</sub> OR C<sub>3</sub>)
 
 For ENVELOPE:
 
-Step 8 matches the rule: C<sub>0</sub> AND NOT (C<sub>3</sub> OR C<sub>2</sub> OR C<sub>1</sub>)
+Step 15 matches the rule: E<sub>2</sub> AND C<sub>2</sub> AND C<sub>1</sub>
 
 For additional optimizations, you could then repeat this exercise for all possible shifts (i.e. instead of saying "Step 0 begins at the 4th timestep in the AMPLITUDE PDM tables" you could say "Step 0 begins at the 0th timestep" or "Step begins at the 62nd timestep").  So long as you use the same shift for both AMPLITUDE PDM and ENVELOPE PDM, the end results are completely equivalent (and it's virtually impossible to replicate how many ticks at 8mhz have passed since power-on-initialization while analysing the behaviour of these steps).  But different shifts might actually result in simpler logic (fewer gates)
