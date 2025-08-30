@@ -54,3 +54,6 @@ Mixed output is simply the logic AND of the two
 Note that, if the frequency oscillator is disabled, then the 'output' of the frequency oscillator is taken to be all 1s i.e. 64/64
 This interacts in the expected way with the envelope generator and mixer, which is how the output of the envelope on its own (e.g. triangle wave) can
 be made audible, as used in various DAC examples.
+Note also that, when the env control is enabled for a channel, the LSB of the AMPLITUDE register for that channel is ignored, hence why standard DAC examples have only 3-bit resolution at the output rather than 4-bit.
+
+If the envelope generator is operating in "3-bit mode" instead of "4-bit mode" then the LSB of the envelope output (0-15) is taken to be zero, but the same PDM sequences apply
