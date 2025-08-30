@@ -1,8 +1,13 @@
 Taken from my own analysis in vogons thread:
 https://www.vogons.org/viewtopic.php?t=51695&start=60
 
+But with some more recent thoughts and ideas captured below:
+
+
 AMPLITUDE PDM SEQUENCES
 ==
+
+This is the original table from my 2018 analysis:
 
 |level|bitstream|ratio|
 |-----|---------|-----|
@@ -23,9 +28,13 @@ AMPLITUDE PDM SEQUENCES
 |14   |1111000000001111111111111111111111111111111111111111111111111111|56/64|
 |15   |1111000011111111111111111111111111111111111111111111111111111111|60/64|
 
+My current thinking is that step 0 in the sequence is the fourth column from the above table: meaning that all levels begin with four periods at zero
+
 
 ENVELOPE PDM SEQUENCES
 ==
+
+This is the original table from my 2018 analysis:
 
 |level|bitstream|ratio|
 |-----|---------|-----|
@@ -46,6 +55,7 @@ ENVELOPE PDM SEQUENCES
 |14   |1111011111110111111101111111011111110111111101111111011111110111|56/64|
 |15   |1111011111111111111101111111111111110111111111111111011111111111|60/64|
 
+Similarly, I now believe that step 0 in the sequence is the fourth column from the above table too: meaning that all levels begin with one period at zero
 
 MIXER
 ==
@@ -57,3 +67,74 @@ be made audible, as used in various DAC examples.
 Note also that, when the env control is enabled for a channel, the LSB of the AMPLITUDE register for that channel is ignored, hence why standard DAC examples have only 3-bit resolution at the output rather than 4-bit.
 
 If the envelope generator is operating in "3-bit mode" instead of "4-bit mode" then the LSB of the envelope output (0-15) is taken to be zero, but the same PDM sequences apply
+
+COMBINATORIAL LOGIC EXPLANATION
+==
+
+Starting with the AMPLITUDE table, as it's a bit easier:
+
+Represent each AMPLITUDE as a 4-bit value using bits C<sub>3</sub> C<sub>2</sub> C<sub>1</sub> C<sub>0</sub> .
+
+Consider a 6-bit counter, representing time and numbering each step Step<sub>0</sub> thru Step<sub>63</sub> .
+
+Group the PDM bitstream into chunks of four bits (taking note of my above comment about where step 0 is in this table). The 'grouping into blocks of 4' is essentially just a 4-bit counter (although with some small additional complexity described later).  But in practical terms, consider instead a 6-bit counter, and extract just the topmost four bits, and use these for looking up the value from the table.
+
+
+The following table then defines the values for each step:
+
+|step|value|
+|----|-----|
+|0-3  | =0  |
+|4-7  | =C<sub>0</sub> |
+|8-11 | =C<sub>1</sub> |
+|12-15| =C<sub>1</sub> |
+|16-19| =C<sub>3</sub> |
+|20-23| =C<sub>3</sub> |
+|24-27| =C<sub>3</sub> |
+|38-31| =C<sub>3</sub> |
+|32-35| =C<sub>2</sub> |
+|36-39| =C<sub>2</sub> |
+|40-43| =C<sub>2</sub> |
+|44-47| =C<sub>2</sub> |
+|48-51| =C<sub>3</sub> |
+|52-55| =C<sub>3</sub> |
+|56-59| =C<sub>3</sub> |
+|60-63| =C<sub>3</sub> |
+
+
+Similarly, for the ENVELOPE table - treating it as its own standalone thing for now:
+
+Represent each of the possible outputs of the EVENLOPE as a 4-bit value using bits E<sub>3</sub> E<sub>2</sub> E<sub>1</sub> E<sub>0</sub> .
+
+For this one, there's no need to do any grouping into blocks of four clocks.  Instead, we observe that each pattern repeats four times across the 64-clock period.  So again consider a 6-bit counter but extract just the lower 4 bits, and use these for looking up the value from the table.  In this sense, Step<sub>0</sub> and Step<sub>16</sub> and Step<sub>32</sub> and Step<sub>40</sub> point to the same row of the table.
+
+|step|value|
+|----|-----|
+|0 (, 16, 32, 40) | =0  |
+|1 (, 17, 33, 41) | =E<sub>1</sub> |
+|2 (, .. etc)     | =E<sub>3</sub> |
+|3  | =E<sub>3</sub> |
+|4  | =E<sub>3</sub> |
+|5  | =E<sub>3</sub> |
+|6  | =E<sub>2</sub> |
+|7  | =E<sub>2</sub> |
+|8  | =E<sub>0</sub> |
+|9  | =E<sub>1</sub> |
+|10 | =E<sub>3</sub> |
+|11 | =E<sub>3</sub> |
+|12 | =E<sub>3</sub> |
+|13 | =E<sub>3</sub> |
+|14 | =E<sub>2</sub> |
+|15 | =E<sub>2</sub> |
+
+To combine these you need to then consider a few differnt cases:
+* if ENV is enabled, use zero instead of LSB of AMPLITUDE (i.e. use C<sub>0</sub> = 0 in this case)
+* if FREQ output is disabled, use '1' for all values of Step for AMPLITUDE PDM
+* If ENV is operating in 3-bit mode, use zero instead of LSB of ENVELOPER (i.e. use E<sub>0</sub> = 0 in this case)
+
+Then it's just a case of computing the logical AND according to the above cases.
+
+If you do all this, you can simplify everything to quite a small number of logic gates and a single counter for Step .
+
+
+
