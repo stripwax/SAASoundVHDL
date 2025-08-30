@@ -145,3 +145,5 @@ For ENVELOPE:
 Step 15 matches the rule: E<sub>2</sub> AND C<sub>2</sub> AND C<sub>1</sub>
 
 For additional optimizations, you could then repeat this exercise for all possible shifts (i.e. instead of saying "Step 0 begins at the 4th timestep in the AMPLITUDE PDM tables" you could say "Step 0 begins at the 0th timestep" or "Step begins at the 62nd timestep").  So long as you use the same shift for both AMPLITUDE PDM and ENVELOPE PDM, the end results are completely equivalent (and it's virtually impossible to replicate how many ticks at 8mhz have passed since power-on-initialization while analysing the behaviour of these steps).  But different shifts might actually result in simpler logic (fewer gates)
+
+Given the ordering of the sequences for ENVELOPE PDM, it also looks like a grey-code counter might be more appropriate than a regular counter;  but only if the advantage in logic offsets the cost of having two separate counters rather than just one global step counter.
