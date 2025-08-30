@@ -73,11 +73,11 @@ COMBINATORIAL LOGIC EXPLANATION
 
 Starting with the AMPLITUDE table, as it's a bit easier:
 
-Represent each AMPLITUDE as a 4-bit value using bits C<sub>3</sub> C<sub>2</sub> C<sub>1</sub> C<sub>0</sub> .
+Represent each AMPLITUDE as a 4-bit value using bits A<sub>3</sub> A<sub>2</sub> A<sub>1</sub> A<sub>0</sub> .
 
-Consider a 6-bit counter, representing time and numbering each step Step<sub>0</sub> thru Step<sub>63</sub> .
+Consider a 6-bit counter, representing time and numbering each step Step<sub>0</sub> thru Step<sub>63</sub> .  Label these bits C<sub>5</sub> C<sub>4</sub> C<sub>3</sub> C<sub>2</sub> C<sub>1</sub> C<sub>0</sub>.
 
-Group the PDM bitstream into chunks of four bits (taking note of my above comment about where step 0 is in this table). The 'grouping into blocks of 4' is essentially just a 4-bit counter (although with some small additional complexity described later).  But in practical terms, consider instead a 6-bit counter, and extract just the topmost four bits, and use these for looking up the value from the table.
+Group the PDM bitstream into chunks of four bits (taking note of my above comment about where step 0 is in this table). The 'grouping into blocks of 4' is essentially just a 4-bit counter (although with some small additional complexity described later).  But in practical terms, consider instead a 6-bit counter, and extract just the topmost four bits (C<sub>5</sub>-C<sub>2</sub>), and use these for looking up the value from the table.
 
 
 The following table then defines the values for each step:
@@ -136,5 +136,12 @@ Then it's just a case of computing the logical AND according to the above cases.
 
 If you do all this, you can simplify everything to quite a small number of logic gates and a single counter for Step .
 
+For example, for AMPLITUDE:
+
+Step 4-7 matches the rule: C<sub>2</sub> AND NOT (C<sub>5</sub> OR C<sub>4</sub> OR C<sub>3</sub>)
+
+For ENVELOPE:
+
+Step 8 matches the rule: C<sub>0</sub> AND NOT (C<sub>3</sub> OR C<sub>2</sub> OR C<sub>1</sub>)
 
 
