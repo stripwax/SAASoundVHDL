@@ -1,0 +1,57 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.NUMERIC_STD.all;
+
+
+entity amp is
+    -- amplifier logic is what "chops" the square waves using mask bits at 8mhz
+    -- well documented in docs section.
+    port(
+        step_counter: in unsigned(5 downto 0);
+        amplitude_level: in unsigned(3 downto 0);
+        envelope_level: in unsigned(3 downto 0);
+        envelope_enabled: in std_logic;
+        frequency_enabled: in std_logic;
+        chop_mask: out std_logic
+    );
+end entity;
+
+architecture behaviour of amp is
+        signal A: unsigned(3 downto 0);
+        signal E: unsigned(3 downto 0);
+        signal C: unsigned(5 downto 0);
+        signal amp_step_0_3, amp_step_4_7, amp_step_8_15, amp_step_16_31_48_63, amp_step_32_47: std_logic;
+        signal env_step_0, env_step_1_9, env_step_2_5_10_13, env_step_6_7_14_15, env_step_8: std_logic;
+        signal amp_bitstream: std_logic;
+        signal env_bitstream: std_logic;
+begin
+
+        C <= step_counter;
+
+        A(3) <= amplitude_level(3);
+        A(2) <= amplitude_level(2);
+        A(1) <= amplitude_level(1);
+        A(0) <= amplitude_level(0) and not envelope_enabled;
+
+        E(3) <= envelope_level(3);
+        E(2) <= envelope_level(2);
+        E(1) <= envelope_level(1);
+        E(0) <= envelope_level(0); -- decision about whether to handle "3-bit envelope mode" here, or in envelope entity
+
+        amp_step_0_3 <= '0';
+        amp_step_4_7 <= A(0) AND C(2) AND NOT (C(3) OR C(4) OR C(5));
+        amp_step_8_15 <= A(1) AND C(3) AND NOT (C(4) OR C(5));
+        amp_step_16_31_48_63 <= A(3) AND C(4);
+        amp_step_32_47 <= A(2) AND C(5) AND NOT C(4);
+        amp_bitstream <= (amp_step_0_3 OR amp_step_4_7 OR amp_step_8_15 OR amp_step_16_31_48_63 OR amp_step_32_47) OR NOT (frequency_enabled);
+
+        env_step_0 <= '0';
+        env_step_1_9 <= E(1) AND C(0) AND NOT (C(1) OR C(2));
+        env_step_2_5_10_13 <= E(3) AND (C(1) XOR C(2));
+        env_step_6_7_14_15 <= E(2) AND C(2) AND C(1);
+        env_step_8 <= E(0) AND C(3) AND NOT (C(0) OR C(1) OR C(2));
+        env_bitstream <= (env_step_0 OR env_step_1_9 OR env_step_2_5_10_13 OR env_step_6_7_14_15 OR env_step_8) OR NOT (envelope_enabled);
+
+        chop_mask <= amp_bitstream AND env_bitstream;
+
+end behaviour;
