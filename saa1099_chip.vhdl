@@ -82,6 +82,127 @@ architecture behaviour of saa1099_digital_output is
     signal a0_pulse: std_logic_bit,
 
 begin
+
+    OSC0: entity work.osc
+        port map (
+
+        );
+
+    OSC1: entity work.osc
+        port map (
+
+        );
+
+    OSC2: entity work.osc
+        port map (
+
+        );
+
+    OSC3: entity work.osc
+        port map (
+
+        );
+
+    OSC4: entity work.osc
+        port map (
+
+        );
+
+    OSC5: entity work.osc
+        port map (
+
+        );
+
+    NOISE0: entity work.noise_bitstream
+        port map (
+
+        );
+
+    NOISE1: entity work.noise_bitstream
+        port map (
+
+        );
+
+    ENV0 : entity work.env
+        port map (
+        
+        );
+
+    ENV1 : entity work.env
+        port map (
+        
+        );
+
+    CLOCKS : entity work.clocks
+        port map (
+
+        );
+
+    STEP_COUNTER : entity work.step_counter
+        port map (
+
+        );
+
+    AMP0 : entity work.amp
+        port map (
+
+        );
+    
+    AMP1 : entity work.amp
+        port map (
+
+        );
+
+    AMP2 : entity work.amp
+        port map (
+
+        );
+
+    AMP3 : entity work.amp
+        port map (
+
+        );
+
+    AMP4 : entity work.amp
+        port map (
+
+        );
+
+    AMP5 : entity work.amp
+        port map (
+
+        );
+
+    MIXER0 : entity work.mixer
+        port map (
+
+        );
+
+    MIXER1 : entity work.mixer
+        port map (
+
+        );
+
+    MIXER2 : entity work.mixer
+        port map (
+
+        );
+
+    MIXER3 : entity work.mixer
+        port map (
+
+        );
+
+    MIXER4 : entity work.mixer
+        port map (
+
+        );
+
+    MIXER5 : entity work.mixer
+        port map (
+
+        );
+
     process (clk)
     begin
         -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
@@ -102,78 +223,78 @@ begin
                         --
                         if _reg(2 downto 0) = "000" then
                             amp0 <= d;
-                        else if _reg(2 downto 0) = "001" then
+                        elsif _reg(2 downto 0) = "001" then
                             amp1 <= d;
-                        else if _reg(2 downto 0) = "010" then
+                        elsif _reg(2 downto 0) = "010" then
                             amp2 <= d;
-                        else if _reg(2 downto 0) = "011" then
+                        elsif _reg(2 downto 0) = "011" then
                             amp3 <= d;
-                        else if _reg(2 downto 0) = "100" then
+                        elsif _reg(2 downto 0) = "100" then
                             amp4 <= d;
-                        else if _reg(2 downto 0) = "101" then
+                        elsif _reg(2 downto 0) = "101" then
                             amp5 <= d;
                         else
                             -- unused
                         end if;
-                    else if _reg(4 downto 3) = "01" then
+                    elsif _reg(4 downto 3) = "01" then
                         -- freq register
                         if _reg(2 downto 0) = "000" then
                             freq0 <= d;
-                        else if _reg(2 downto 0) = "001" then
+                        elsif _reg(2 downto 0) = "001" then
                             freq1 <= d;
-                        else if _reg(2 downto 0) = "010" then
+                        elsif _reg(2 downto 0) = "010" then
                             freq2 <= d;
-                        else if _reg(2 downto 0) = "011" then
+                        elsif _reg(2 downto 0) = "011" then
                             freq3 <= d;
-                        else if _reg(2 downto 0) = "100" then
+                        elsif _reg(2 downto 0) = "100" then
                             freq4 <= d;
-                        else if _reg(2 downto 0) = "101" then
+                        elsif _reg(2 downto 0) = "101" then
                             freq5 <= d;
                         else
                             -- unused
                         end if;
-                    else if _reg(4 downto 0) = "10000" then
+                    elsif _reg(4 downto 0) = "10000" then
                         -- osc0 and 1 register
                         osc0(2 downto 0) <= d(2 downto 0);
                         osc1(2 downto 0) <= d(6 downto 4);
-                    else if _reg(4 downto 0) = "10001" then
+                    elsif _reg(4 downto 0) = "10001" then
                         -- osc2 and 3 register
                         osc2(2 downto 0) <= d(2 downto 0);
                         osc3(2 downto 0) <= d(6 downto 4);
-                    else if _reg(4 downto 0) = "10010" then
+                    elsif _reg(4 downto 0) = "10010" then
                         -- osc4 and 5 register
                         osc4(2 downto 0) <= d(2 downto 0);
                         osc5(2 downto 0) <= d(6 downto 4);
-                    else if _reg(4 downto 0) = "10100" then
+                    elsif _reg(4 downto 0) = "10100" then
                         freq0_en <= d(0 downto 0);
                         freq1_en <= d(1 downto 1);
                         freq2_en <= d(2 downto 2);
                         freq3_en <= d(3 downto 3);
                         freq4_en <= d(4 downto 4);
                         freq5_en <= d(5 downto 5);
-                    else if _reg(4 downto 0) = "10101" then
+                    elsif _reg(4 downto 0) = "10101" then
                         noise0_en <= d(0 downto 0);
                         noise1_en <= d(1 downto 1);
                         noise2_en <= d(2 downto 2);
                         noise3_en <= d(3 downto 3);
                         noise4_en <= d(4 downto 4);
                         noise5_en <= d(5 downto 5);
-                    else if _reg(4 downto 0) = "10110" then
+                    elsif _reg(4 downto 0) = "10110" then
                         noise0_sel <= d(1 downto 0);
                         noise1_sel <= d(5 downto 4);
-                    else if _reg(4 downto 0) = "11000" then
+                    elsif _reg(4 downto 0) = "11000" then
                         env0_lr <= d(0 downto 0);
                         env0_wave(2 downto 0) <= d(3 downto 1);
                         env0_res <= d(4 downto 4);
                         env0_clk_source <= d(5 downto 5);
                         env0_en <= d(7 downto 7);
-                    else if _reg(4 downto 0) = "11001" then
+                    elsif _reg(4 downto 0) = "11001" then
                         env1_lr <= d(0 downto 0);
                         env1_wave(2 downto 0) <= d(3 downto 1);
                         env1_res <= d(4 downto 4);
                         env1_clk_source <= d(5 downto 5);
                         env1_en <= d(7 downto 7);
-                    else if _reg(4 downto 0) = "11100" then
+                    elsif _reg(4 downto 0) = "11100" then
                         enable <= d(0 downto 0);
                         sync_rst <= d(1 downto 1);
                     else
