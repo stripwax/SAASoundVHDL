@@ -34,9 +34,8 @@ end osc;
 
 architecture behaviour of osc is
     signal counter: unsigned(7 downto 0) := (others=>'0');
-    signal div_counter: unsigned(2 downto 0) := (others=>'0');  - question: does every osc have their own div_counter or is there a shared set of 8 triggers?  test case: is it possible to run two oscs at same frequency+octave but mismatched phase.  pretty sure the answer is yes.
+    signal div_counter: unsigned(2 downto 0) := (others=>'0');  -- question: does every osc have their own div_counter or is there a shared set of 8 triggers?  test case: is it possible to run two oscs at same frequency+octave but mismatched phase.  pretty sure the answer is yes.
     signal latched_freq: unsigned(7 downto 0);
-    signal latched_octave: unsigned(2 downto 0);
     signal latched: bit := '0';
 begin
     process(clk)
@@ -53,7 +52,6 @@ begin
 
         if sync then
             div_counter <= octave;
-            latched_octave <= octave;
             counter <= frequency;
             latched_freq <= frequency;
             latched <= '1';
@@ -63,11 +61,13 @@ begin
             if div_counter/="111" then
                 div_counter <= div_counter+1;
             else
-                div_counter <= latched_octave;
+                div_counter <= octave;
 
                 if octave_wr='1' then
+                    -- writing to octave register triggers a copy (latch) of the frequency register
+                    -- which enables the next period to set the octave and frequency at the same time (no glitch)
+                    -- setting frequency after that will be ignored until the next half cycle
                     latched_freq <= frequency;
-                    latched_octave <= octave;
                     latched <= '1'; -- note, since signal, won't be updated until end of process
                 end if;
                 
@@ -80,7 +80,7 @@ begin
                         counter <= frequency;
                     end if;
                 else
-                    counter <= counter - 1;
+                    counter <= counter + 1;
                 end if;
             end if;
         end if;
