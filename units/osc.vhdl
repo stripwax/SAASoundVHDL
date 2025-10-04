@@ -28,50 +28,51 @@ entity osc is
     octave: in unsigned(2 downto 0);
     octave_wr: in bit;
     output: out bit;
-    count_zero: out bit
+    trigger: out bit
     );
 end osc;
 
 architecture behaviour of osc is
     signal counter: unsigned(7 downto 0) := (others=>'0');
-    signal div_counter: unsigned(2 downto 0) := (others=>'0');
+    signal div_counter: unsigned(2 downto 0) := (others=>'0');  - question: does every osc have their own div_counter or is there a shared set of 8 triggers?  test case: is it possible to run two oscs at same frequency+octave but mismatched phase.  pretty sure the answer is yes.
     signal latched_freq: unsigned(7 downto 0);
     signal latched_octave: unsigned(2 downto 0);
     signal latched: bit := '0';
 begin
     process(clk)
-    variable counter_is_zero: bit;
+    variable counter_overflow: bit;
     begin
 
     if rising_edge(clk) then
 
-        counter_is_zero := '0';
+        if counter="11111111" then
+            counter_overflow := '1';
+        else
+            counter_overflow := '0';
+        end if;
 
         if sync then
-            counter <= (others=>'0');
-            div_counter <= (others=>'0');
+            div_counter <= octave;
             latched_octave <= octave;
+            counter <= frequency;
             latched_freq <= frequency;
             latched <= '1';
-            counter_is_zero := '1';
+            counter_overflow := '1';  -- unsure about this.  Is that what we need to correctly reproduce the "8mhz noise when sync'd" bug?
+            output <= '1';  -- test case: check FRED space demo
         else
-            if div_counter/=0 then
-                div_counter <= div_counter-1;
+            if div_counter/="111" then
+                div_counter <= div_counter+1;
             else
                 div_counter <= latched_octave;
 
-                if counter="0" then
-                    counter_is_zero := '1';
-                end if;
-
-                if octave_wr then
+                if octave_wr='1' then
                     latched_freq <= frequency;
                     latched_octave <= octave;
                     latched <= '1'; -- note, since signal, won't be updated until end of process
                 end if;
                 
-                if counter_is_zero = '1' then
-                    output <= not output;
+                if counter_overflow = '1' then
+                    output <= not output;  -- toggle output bit
                     if latched = '1' or octave_wr ='1' then
                         counter <= latched_freq;
                         latched <= '0';
@@ -84,7 +85,7 @@ begin
             end if;
         end if;
 
-        count_zero <= counter_is_zero;
+        trigger <= counter_overflow;  -- pulses when output toggles, used to trigger the connected noise or env device
 
     end if;
 
