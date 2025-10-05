@@ -57,6 +57,7 @@ begin
   begin
 
     -- init, and assert output is always 1 while sync is set
+    -- essentially this asserts that output (when sync set) does not depend on octave clocks
     clk <= '0';
     wait for 1 ns;
 
@@ -69,22 +70,19 @@ begin
     octave_clks <= "11111111";
     wait for 1 ns;
     clk <= '0';
-    octave_clks <= "11111111";
     wait for 1 ns;
     clk <= '1';
     octave_clks <= "00000000";
     wait for 1 ns;
     clk <= '0';
-    octave_clks <= "00000000";
     wait for 1 ns;
 
-    for i in 1 to 150000 loop
+    for i in 1 to 12345 loop
         clk <= '1';
         octave_clks <= "11111111";
         wait for 1 ns;
         assert output = '1'; 
         clk <= '0';
-        octave_clks <= "11111111";
         wait for 1 ns;
         assert output = '1'; 
         clk <= '1';
@@ -92,7 +90,22 @@ begin
         wait for 1 ns;
         assert output = '1'; 
         clk <= '0';
-        octave_clks <= "00000000";
+        wait for 1 ns;
+        assert output = '1'; 
+    end loop;
+
+    octave_clks <= "XXXXXXXX";
+    for i in 1 to 12345 loop
+        clk <= '1';
+        wait for 1 ns;
+        assert output = '1'; 
+        clk <= '0';
+        wait for 1 ns;
+        assert output = '1'; 
+        clk <= '1';
+        wait for 1 ns;
+        assert output = '1'; 
+        clk <= '0';
         wait for 1 ns;
         assert output = '1'; 
     end loop;
