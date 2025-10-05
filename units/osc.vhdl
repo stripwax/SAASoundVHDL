@@ -43,33 +43,29 @@ architecture behaviour of osc is
     signal ctr_phase: std_logic := '0';
     signal latched_octave: unsigned(2 downto 0);
     signal latched_freq: unsigned(7 downto 0);
-    signal octave_clk: std_logic;
-    signal octave_clk_pulse: std_logic;
 begin
     process(clk)
+        variable octave_clk: std_logic;
     begin
 
         if rising_edge(clk) then
             -- octave sets the clock divider.  octave needs to be latched (and the latched octave set the clock divider)
             -- because it is not possible to change octave mid-period ;  change is always deferred until the end of half-cycle
-            -- We actually only want to 'tick' when octave counter changes from low to high so we turn the clk_div into a pulse
-            octave_clk <= octave_clks(to_integer(latched_octave));
-            octave_clk_pulse <= (octave_clks(to_integer(latched_octave)) and not octave_clk);
+            -- Note that 'octave_clk' is wired to the `pulse_div` outputs of clocks.vhdl
+            octave_clk := octave_clks(to_integer(latched_octave));
 
             trigger <= '0'; -- assume not triggered, but clauses below will pulse this as required
 
             if sync then
-                counter <= "00000000";
-                ctr_phase <= '0';
+                counter <= "11111111";
+                ctr_phase <= '1';
                 latched_freq <= frequency;
                 latched_octave <= octave;
-                octave_clk <= '0';
-                octave_clk_pulse <= '0';
                 trigger <= '1';  -- unsure about this.  Is that what we need to correctly reproduce the "8mhz noise when sync'd" bug?  does that bug manifest for env generators too?
                 output <= '1';  -- test case: check FRED space demo
             else
 
-                if octave_clk_pulse then
+                if octave_clk then
                     if octave_wr='1' then
                         -- writing to octave register triggers a copy (latch) of the frequency register
                         -- which enables the next period to set the octave and frequency at the same time (no glitch)
