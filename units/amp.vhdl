@@ -22,6 +22,10 @@ use IEEE.NUMERIC_STD.all;
 entity amp is
     -- amplifier logic is what "chops" the square waves using mask bits at 8mhz
     -- well documented in docs section.
+    -- question: does every channel use the same masking patterns?  in other words, are the channels masking patterns synchronised
+    --           to the same step counter, or could they be offset/flipped for different channels?
+    --           test case: try enabling multiple channels with synchronised osc and changing osc levels
+    --           test case: try setting 'DAC' mode (env enabled, osc mixer disabled) and changing osc levels AND env leves
     port(
         step_counter: in unsigned(5 downto 0);
         amplitude_level: in unsigned(3 downto 0);
