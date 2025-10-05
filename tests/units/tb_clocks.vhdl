@@ -28,7 +28,8 @@ architecture behaviour of tb_clocks is
   component clocks
   port (
         clk: in std_logic;
-        clk_div: out std_logic_vector(9 downto 0)
+        clk_div: out std_logic_vector(9 downto 0);
+        pulse_div: out std_logic_vector(9 downto 0)
     );
   end component;
 
@@ -36,47 +37,63 @@ architecture behaviour of tb_clocks is
   for clocks_0: clocks use entity work.clocks;
     signal clk: std_logic;
     signal clk_div: std_logic_vector(9 downto 0);
+    signal pulse_div: std_logic_vector(9 downto 0);
 begin
   --  Component instantiation.
-  clocks_0: clocks port map (clk => clk, clk_div => clk_div);
+  clocks_0: clocks port map (clk => clk, clk_div => clk_div, pulse_div => pulse_div);
 
   --  This process does the real job.
   process
     variable prev : unsigned(9 downto 0);
   begin
 
+    clk <= '0';
+    wait for 1 ns;
+
+    clk <= '1';
+    wait for 1 ns;
     assert clk_div = "0000000000";
-
+    assert pulse_div = "1111111111";
     clk <= '0';
     wait for 1 ns;
+
     clk <= '1';
     wait for 1 ns;
-
     assert clk_div = "0000000001";
-
+    assert pulse_div = "0000000000";
     clk <= '0';
     wait for 1 ns;
+
     clk <= '1';
     wait for 1 ns;
-
     assert clk_div = "0000000010";
-
+    assert pulse_div = "0000000001";
     clk <= '0';
     wait for 1 ns;
+
     clk <= '1';
     wait for 1 ns;
-
     assert clk_div = "0000000011";
+    assert pulse_div = "0000000000";
+    clk <= '0';
+    wait for 1 ns;
+
+    clk <= '1';
+    wait for 1 ns;
+    assert clk_div = "0000000100";
+    assert pulse_div = "0000000011";
+    clk <= '0';
+    wait for 1 ns;
 
     prev := unsigned(clk_div);
 
     for i in 1 to 262144 loop
-        clk <= '0';
-        wait for 1 ns;
         clk <= '1';
         wait for 1 ns;
         assert unsigned(clk_div) = prev+1;
         prev := unsigned(clk_div);
+        clk <= '0';
+        wait for 1 ns;
     end loop;
 
     --  Wait forever; this will finish the simulation.
