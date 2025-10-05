@@ -56,67 +56,102 @@
 -- 110 = saw up, halt           =>  counter_output = 1, invert_output = 1, halt_or_repeat = 0, invert_flip = 0
 -- 111 = saw up, repeat         =>  counter_output = 1, invert_output = 1, halt_or_repeat = 1, invert_flip = 0
 
-port(
-    clk : in std_logic;
-    en_write : in std_logic;
-    a0_write : in std_logic;
-    en7, en5, en4, en3, en2, en1, en0 : in std_logic;
-    osc_trigger: in std_logic;
-    output_left, output_right : out unsigned(3 downto 0)
-)
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.NUMERIC_STD.all;
 
-signal counter: std_logic_vector(3 downto 0) := "1111";
-signal new_env_waiting : std_logic;
-signal en5_buffered, en4_buffered, en3_buffered, en2_buffered, en1_buffered : std_logic;
-signal counter_output, invert_output, halt_or_reset, invert_flip : std_logic;
+entity env is
+    -- envelope generator (see data sheet)
+    port(
+        clk : in std_logic;
+        env_write : in std_logic;
+        a0_write : in std_logic;
 
-if rising_edge(clk) then
+        env_lr : in std_logic;
+        env_wave : std_logic_vector(2 downto 0);
+        env_res : std_logic;
+        env_clk_source : std_logic;
+        env_en : std_logic;
 
-    if not en7 then
-        counter <= "1111";
-    else
+        osc_trigger: in std_logic;
+        output_left, output_right : out unsigned(3 downto 0)
+    );
+end env;
 
-        if mode_4bit then
-            effective_counter := counter;
-        else
-            effective_counter := (counter(3 downto 1) & '0');
-        end if;
-        if effective_counter=0 then
-            -- process new env instruction here (this corresponds to position(3) or position(4))
-            if new_env_waiting then
+architecture behaviour of env is
+
+    signal counter: std_logic_vector(3 downto 0) := "1111";
+    signal new_env_waiting : std_logic;
+    signal env_lr_buffered, env_clk_source_buffered : std_logic;
+    signal env_wave_buffer : std_logic_vector(2 downto 0);
+    signal counter_output, invert_output, halt_or_reset, invert_flip : std_logic;
+
+begin
+    process(clk)
+        variable trigger : std_logic;
+        variable effective_counter : std_logic_vector(3 downto 0);
+    begin
+
+        trigger := (a0_write AND env_clk_source='0') OR (osc_trigger AND env_clk_source='1');
+
+        if rising_edge(clk) then
+
+            if not env_en then
+                counter <= "1111";
             else
-                if halt_or_repeat='0' and (invert_flip='0' or invert_output='0') then
-                    halted <= '1';
-                    env_output <= 0;
+
+                if env_res='1' then
+                    -- 4 bit mode
+                    effective_counter := counter;
                 else
-                    counter <= "1111";
-                    if invert_flip then
-                        invert <= 0;
-                    end if;
+                    -- 3 bit mode , and lsb is fixed to be zero
+                    effective_counter := (counter(3 downto 1) & '0');
                 end if;
-            end if;
-        else
-            if mode_4bit then
-                counter <= counter-1;
-            else
-                counter <= counter-2;
-            end if;
-        end if; 
 
-        if counter_output then
-            intermediate_out := counter;
-        else
-            intermediate_out := "0000";
-        end if;
-        if invert then
-            calc_output_left := counter xor "1111";
-        else
-            calc_output_left := counter;
+                if effective_counter=0 then
+                    -- process new env instruction here (this corresponds to position(3) or position(4))
+                    if new_env_waiting then
+                    else
+                        if halt_or_repeat='0' and (invert_flip='0' or invert_output='0') then
+                            halted <= '1';
+                            env_output <= 0;
+                        else
+                            counter <= "1111";
+                            if invert_flip then
+                                invert <= 0;
+                            end if;
+                        end if;
+                    end if;
+                else
+                    if mode_4bit then
+                        counter <= counter-1;
+                    else
+                        counter <= counter-2;
+                    end if;
+                end if; 
+
+                if counter_output then
+                    intermediate_out := counter;
+                else
+                    intermediate_out := "0000";
+                end if;
+                if invert then
+                    calc_output_left := counter xor "1111";
+                else
+                    calc_output_left := counter;
+                end if;
+
+                output_left <= calc_output_left;
+                if right_invert then
+                    output_right <= calc_output_left xor "1111";
+                else
+                    output_right <= calc_output_left;
+                end if;
+            
+            end if;
         end if;
 
-        output_left <= calc_output_left;
-        if right_invert then
-            output_right <= calc_output_left xor "1111";
-        else
-            output_right <= calc_output_left;
-        end if;
+    end process;
+
+end behaviour;
+
