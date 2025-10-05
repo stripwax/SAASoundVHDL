@@ -128,6 +128,7 @@ begin
                 -- time steps are 0 to 63 but patterns expressed left-to-right so timestep 0 is MSB (not LSB)
                 -- so need (63-s) as index not (s)
                 expected_bit := expected_amp(63-s);
+                expected_bit; -- placate automated checks that say expected_bit is unused (I suppose they don't understand assert statements?)
                 assert chop_mask = expected_bit
                     report "amp " & to_string(i) & " env " & to_string(j) & " wrong output " & to_string(s) & " - expected " & to_string(expected_bit) & " got " & to_string(chop_mask) & " - pattern should be " & to_string(expected_amp) severity error;
             end loop;
