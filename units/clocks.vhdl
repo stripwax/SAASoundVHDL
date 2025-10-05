@@ -20,26 +20,25 @@ use IEEE.NUMERIC_STD.all;
 
 entity clocks is
   -- various clock frequencies
-  -- given 8mhz system clock, outputs clocks at 31.3khz, 15.6khz and 7.6khz
+  -- Oscillators require 8 octaves, corresponding to dividing by 2, 4, 8, 16, 32, 64, 128, 256
+  -- Noise generators require clocks at 31.3khz, 15.6khz and 7.6khz
   -- (respectively, divide by 256, 512, 1024)
-  -- as required by noise generators
+  -- Is this what the datasheet means by /8 octave clocks and /3 internal clocks?
   port (
-    clk: in bit;
-    clk_313, clk_156, clk_76: out std_logic
+    clk: in std_logic;
+    clk_div: out std_logic_vector(9 downto 0) := (others => '0')
     );
 end clocks;
 
 architecture behaviour of clocks is
-    signal counter: unsigned(10 downto 0) := (others => '0');
 begin
     process(clk)
     begin
     if rising_edge(clk) then
         -- question: which clocks (if any) still tick when SYNC bit is set? I may need to connect to SYNC bit here.
-        counter <= counter + 1;
-        clk_313 <= counter(8);
-        clk_156 <= counter(9);
-        clk_76 <= counter(10);
+        -- question: are all these clocks shared across all the oscs and noise generators, or do they have their own counters?
+        --           (I assume all shared to reduce silicon, but should be a test case with chip to confirm)
+        clk_div <= std_logic_vector(unsigned(clk_div) + 1);
     end if;
     end process;
 
