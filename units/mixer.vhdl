@@ -35,7 +35,7 @@ entity mixer is
 end mixer;
 
 architecture behaviour of mixer is
-signal noise_resolved_bitstream, freq_resolved_bitstream, env_resolved_bitstream: bit;
+signal noise_resolved_bitstream, freq_resolved_bitstream: bit;
 begin
     noise_resolved_bitstream <= (noise_bitstream or not noise_enable);
     freq_resolved_bitstream <= (freq_bitstream or not freq_enable);
