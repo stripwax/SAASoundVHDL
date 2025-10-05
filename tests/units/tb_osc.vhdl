@@ -1,0 +1,321 @@
+--    SAASoundVHDL - hardware description of Philips SAA1099 device in VHDL and other languages
+--    Copyright (C) 2025  David Hooper (github.com/stripwax)
+--
+--    This program is free software: you can redistribute it and/or modify
+--    it under the terms of the GNU General Public License as published by
+--    the Free Software Foundation, either version 3 of the License, or
+--    (at your option) any later version.
+--
+--    This program is distributed in the hope that it will be useful,
+--    but WITHOUT ANY WARRANTY; without even the implied warranty of
+--    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--    GNU General Public License for more details.
+--
+--    You should have received a copy of the GNU General Public License
+--    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+--  A testbench has no ports.
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.NUMERIC_STD.all;
+use work.osc;
+
+entity tb_osc is
+end tb_osc;
+
+architecture behaviour of tb_osc is
+  --  Declaration of the component that will be instantiated.
+  component osc
+  port (
+        clk: in std_logic;
+        octave_clks: in std_logic_vector(7 downto 0);
+        sync: in std_logic;
+        frequency: in unsigned(7 downto 0);
+        octave: in unsigned(2 downto 0);
+        octave_wr: in std_logic;
+        output: out std_logic;
+        trigger: out std_logic
+    );
+  end component;
+
+  --  Specifies which entity is bound with the component.
+  for osc_0: osc use entity work.osc;
+    signal clk: std_logic;
+    signal octave_clks: std_logic_vector(7 downto 0) := "00000000";
+    signal sync: std_logic;
+    signal frequency: unsigned(7 downto 0);
+    signal octave: unsigned(2 downto 0);
+    signal octave_wr: std_logic;
+    signal output: std_logic;
+    signal trigger: std_logic;
+begin
+  --  Component instantiation.
+  osc_0: osc port map (clk => clk, octave_clks => octave_clks, sync => sync, frequency => frequency, octave => octave, octave_wr => octave_wr, output => output, trigger => trigger);
+
+  --  This process does the real job.
+  process
+  begin
+
+    -- init, and assert output is always 1 while sync is set
+    frequency <= "11111111";
+    octave <= "111";
+    sync <= '1';
+    octave_wr <= '0';
+
+    clk <= '1';
+    octave_clks <= "11111111";
+    wait for 1 ns;
+    clk <= '0';
+    octave_clks <= "11111111";
+    wait for 1 ns;
+    clk <= '1';
+    octave_clks <= "00000000";
+    wait for 1 ns;
+    clk <= '0';
+    octave_clks <= "00000000";
+    wait for 1 ns;
+
+    for i in 1 to 150000 loop
+        clk <= '1';
+        octave_clks <= "11111111";
+        wait for 1 ns;
+        assert output = '1'; 
+        clk <= '0';
+        octave_clks <= "11111111";
+        wait for 1 ns;
+        assert output = '1'; 
+        clk <= '1';
+        octave_clks <= "00000000";
+        wait for 1 ns;
+        assert output = '1'; 
+        clk <= '0';
+        octave_clks <= "00000000";
+        wait for 1 ns;
+        assert output = '1'; 
+    end loop;
+
+    -- At highest octave (but lowest freq register), osc output should be a square wave with period = 3.90625 kHz
+    -- which corresponds to 2048 clock cycles @ 8MHz ; or in other words 1024 clock cycles @ 8 MHz per each HALF wave
+    -- This is achived by counting 512 clock cycles @ 4 MHz
+    --
+    -- For highest octave and highest freq, this should correspond to 257 clock cycles @ 4 MHz per each HALF wave
+
+    -- For lowest octave and lowest freq, osc output should be a square wave with period = 31 Hz
+    -- which corresponds to 262144 clock cycles @ 8Mhz ; or in other words 131072 clock cycles @ 8 MHz per each HALF wave
+    -- This is achived by counting 512 clock cycles @ (4 MHz divided by 128) = 15.625 kHz
+    -- or in other words, 65536 clock cycles @ 4 MHz .
+    --
+    -- For lowest octave and highest freq, this should correspond to 257 clock cycles @ (4 MHz divided by 128)
+    -- or in other words, 32896 clock cycles @ 4 MHz .
+    --
+    -- Start with "highest octave and highes freq" test case:
+    --
+    -- Obviously it's important to wire up the clks correctly:
+    -- octave_clks(7) = 4MHz clock (since octave register=7 for highest octave)
+    -- octave_clks(6) = 4 MHz / 2
+    --  .
+    --  .
+    --  .
+    -- octave_clks(0) = 4 MHz / 128
+
+    frequency <= "11111111";
+    octave <= "111";
+    octave_wr <= '1';
+    sync <= '1';
+    octave_clks <= "0XXXXXXX";
+    clk <= '1';
+    wait for 125 ns;
+    clk <= '0';
+    wait for 125 ns;
+
+    sync <= '0';
+    octave_wr <= '0';
+
+    for j in 1 to 10 loop
+        for i in 1 to 257 loop
+            octave_clks <= "0XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            octave_clks <= "1XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+        end loop;
+        for i in 1 to 257 loop
+            octave_clks <= "0XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            octave_clks <= "1XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+        end loop;
+    end loop;
+
+    -- highest octave, lowest frequency
+    frequency <= "00000000";
+    octave <= "111";
+    octave_wr <= '1';
+    sync <= '1';
+    octave_clks <= "0XXXXXXX";
+    clk <= '1';
+    wait for 125 ns;
+    clk <= '0';
+    wait for 125 ns;
+
+    sync <= '0';
+    octave_wr <= '0';
+
+    for j in 1 to 10 loop
+        for i in 1 to 512 loop
+            octave_clks <= "0XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            octave_clks <= "1XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+        end loop;
+        for i in 1 to 512 loop
+            octave_clks <= "0XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            octave_clks <= "1XXXXXXX";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+        end loop;
+    end loop;
+
+    -- lowest octave, highest frequency
+    -- here, I'm just faking the clock to be 4MHz still, not 4MHz/128
+    frequency <= "11111111";
+    octave <= "000";
+    octave_wr <= '1';
+    sync <= '1';
+    octave_clks <= "XXXXXXX0";
+    clk <= '1';
+    wait for 125 ns;
+    clk <= '0';
+    wait for 125 ns;
+
+    sync <= '0';
+    octave_wr <= '0';
+
+    for j in 1 to 10 loop
+        for i in 1 to 257 loop
+            octave_clks <= "XXXXXXX0";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            octave_clks <= "XXXXXXX1";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+        end loop;
+        for i in 1 to 257 loop
+            octave_clks <= "XXXXXXX0";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            octave_clks <= "XXXXXXX1";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+        end loop;
+    end loop;
+
+    -- lowest octave, lowest frequency
+    frequency <= "00000000";
+    octave <= "000";
+    octave_wr <= '1';
+    sync <= '1';
+    octave_clks <= "XXXXXXX0";
+    clk <= '1';
+    wait for 125 ns;
+    clk <= '0';
+    wait for 125 ns;
+
+    sync <= '0';
+    octave_wr <= '0';
+
+    for j in 1 to 10 loop
+        for i in 1 to 512 loop
+            octave_clks <= "XXXXXXX0";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            octave_clks <= "XXXXXXX1";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '1'; -- question, should this be 0 or 1??
+        end loop;
+        for i in 1 to 512 loop
+            octave_clks <= "XXXXXXX0";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            octave_clks <= "XXXXXXX1";
+            clk <= '1';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+            clk <= '0';
+            wait for 125 ns;
+            assert output = '0'; -- question, should this be 1 or 0??
+        end loop;
+    end loop;
+
+    --  Wait forever; this will finish the simulation.
+    wait;
+  end process;
+
+end behaviour;
