@@ -23,7 +23,6 @@ entity osc is
   -- and count-zero trigger output
   port (
     clk: in std_logic;
-    octave_clks: in std_logic_vector(7 downto 0);
     sync: in std_logic;
     frequency: in unsigned(7 downto 0);
     octave: in unsigned(2 downto 0);
@@ -35,29 +34,38 @@ end osc;
 
 architecture behaviour of osc is
     -- we have an 8-bit counter that operates in two phases
-    -- a base phase counts 256 pulses of a (divided) clock i.e. from 0 up to 0 (overflow)
-    -- a secondary phase counts up from @frequency to 0 (overflow)
-    -- ctr_phase = '0' means base phase, ctr_phase = '1' means secondary (frequency register) phase
+    -- a primary phase counts up from @frequency to 0 (overflow)
+    -- a secondary phase counts 256 pulses of a (divided) clock i.e. from 0 up to 0 (overflow)
+    -- ctr_phase = '0' means primary phase, ctr_phase = '1' means secondary
     -- the counter mode toggles between those two phases.
     signal counter: unsigned(7 downto 0) := (others=>'0');
     signal ctr_phase: std_logic := '0';
+    signal octave_clks: unsigned(7 downto 0);
     signal latched_octave: unsigned(2 downto 0);
     signal latched_freq: unsigned(7 downto 0);
+    signal octave_clk_pulse_diag: std_logic;
 begin
     process(clk)
-        variable octave_clk: std_logic;
+        variable next_octave_clks: unsigned(7 downto 0);
+        variable octave_clk_pulse: std_logic;
     begin
 
         if rising_edge(clk) then
+
             -- octave sets the clock divider.  octave needs to be latched (and the latched octave set the clock divider)
             -- because it is not possible to change octave mid-period ;  change is always deferred until the end of half-cycle
-            -- Note that 'octave_clk' is wired to the `pulse_div` outputs of clocks.vhdl
-            octave_clk := octave_clks(to_integer(latched_octave));
+            -- writing to octave register triggers a copy (latch) of the frequency register
+            -- which enables the next period to set the octave and frequency at the same time (no glitch)
+            -- setting frequency after that will be ignored until the next half cycle
+            if octave_wr='1' then
+                latched_freq <= frequency;
+            end if;
 
             trigger <= '0'; -- assume not triggered, but clauses below will pulse this as required
 
             if sync then
                 counter <= "11111111";
+                octave_clks <= "11111111";
                 ctr_phase <= '1';
                 latched_freq <= frequency;
                 latched_octave <= octave;
@@ -65,29 +73,30 @@ begin
                 output <= '1';  -- test case: check FRED space demo
             else
 
-                if octave_clk then
-                    if octave_wr='1' then
-                        -- writing to octave register triggers a copy (latch) of the frequency register
-                        -- which enables the next period to set the octave and frequency at the same time (no glitch)
-                        -- setting frequency after that will be ignored until the next half cycle
-                        latched_freq <= frequency;
-                        latched_octave <= octave;
-                    end if;
+                next_octave_clks := octave_clks + 1;
+                octave_clks <= next_octave_clks;
 
+                octave_clk_pulse := (not next_octave_clks(7-to_integer(latched_octave))) and octave_clks(7-to_integer(latched_octave));
+                octave_clk_pulse_diag <= octave_clk_pulse;
+
+                if octave_clk_pulse then
                     if counter = "11111111" then
                         if ctr_phase = '0' then
-                            -- secondary  phase, counting up from frequency register
-                            counter <= latched_freq;
+                            -- primary phase complete, do secondary phase
+                            counter <= "00000000";
                             ctr_phase <= '1';
                         else
-                            -- reset to primary phase
-                            counter <= "00000000";
+                            -- done secondary phase, switch back to primary phase, counting up from frequency register
+                            -- this marks the end of a (half) wave.
+                            -- reload frequency/octave registers now for next half wave because they may have changed
+                            counter <= latched_freq;
                             ctr_phase <= '0';
                             trigger <= '1';  -- generate pulse on overflow, as required for env generator and noise generator
 
                             output <= not output;  -- toggle output bit
                             latched_freq <= frequency;
-                            -- latched_octave <= octave; -- probably unnecessary since octave only changes when it has been written to, which has already been checked in a previous claus
+                            latched_octave <= octave;
+                            octave_clks <= "00000000";  -- always reset octave clks here, because we (may have) changed octave
                         end if;
                     else
                         counter <= counter + 1;
