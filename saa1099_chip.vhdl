@@ -167,18 +167,18 @@ begin
         );
 
     -- temp bodge:
-    outl(0) <= osc0_output;
-    outl(1) <= osc0_output;
-    outl(2) <= osc0_output;
-    outl(3) <= osc0_output;
-    outl(4) <= osc0_output;
-    outl(5) <= osc0_output;
-    outr(0) <= osc0_output;
-    outr(1) <= osc0_output;
-    outr(2) <= osc0_output;
-    outr(3) <= osc0_output;
-    outr(4) <= osc0_output;
-    outr(5) <= osc0_output;
+    outl(0) <= osc0_output or (not enable);
+    outl(1) <= osc1_output or (not enable);
+    outl(2) <= osc2_output or (not enable);
+    outl(3) <= osc3_output or (not enable);
+    outl(4) <= osc4_output or (not enable);
+    outl(5) <= osc5_output or (not enable);
+    outr(0) <= osc0_output or (not enable);
+    outr(1) <= osc1_output or (not enable);
+    outr(2) <= osc2_output or (not enable);
+    outr(3) <= osc3_output or (not enable);
+    outr(4) <= osc4_output or (not enable);
+    outr(5) <= osc5_output or (not enable);
 
 /*
     NOISE0: entity work.noise_bitstream
