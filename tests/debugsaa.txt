@@ -1,18 +1,16 @@
-# Column description:
-# wait_time | sel | din_0 | din_1 | din_2 | din3 # Optional console printout
-
-0 ns 0 AA BB CC DD # Setting initial values
-10 ns 1 AA BB CC DD # Testing by changing the selector signal
-10 ns 2 AA BB CC DD
-10 ns 3 AA BB CC DD
-10 ns 3 A1 B1 C1 D1 # Testing by changing all data inputs
-10 ns 3 A2 B2 C2 D2
-10 ns 3 A3 B3 C3 D3
-10 ns 3 00 00 00 D2 # Changing all unselected inputs
-10 ns 3 01 02 03 D2
-10 ns 3 11 22 33 D2
-1 ns 0 CC DD EE FF # Changing all inputs fast
-1 ns 1 DD EE FF CC
-1 ns 2 EE FF CC DD
-1 ns 3 FF CC DD EE
-10 ns 0 00 00 00 00 # Simulation stop
+0 28
+0 28 2
+1 28
+1 28 1
+1 20
+1 20 1
+1 8
+1 8 255
+1 16
+1 16 7
+1 0
+1 0 255
+10 8
+10 8 0
+20 16
+20 16 6
