@@ -79,9 +79,6 @@ architecture behaviour of saa1099_digital_output is
     signal enable : std_logic := '0';
 
     signal a0_pulse: std_logic;
-    signal osc01_wr: std_logic;
-    signal osc23_wr: std_logic;
-    signal osc45_wr: std_logic;
 
     signal osc0_output: std_logic;
     signal osc0_trigger: std_logic;
@@ -278,9 +275,9 @@ begin
 
         -- we need to track if octave registers were written to, since this is a trigger for the oscillator
         -- to also capture the freq registers at the same time
-        osc01_wr <= '0';
-        osc23_wr <= '0';
-        osc45_wr <= '0';
+        oct01_wr <= '0';
+        oct23_wr <= '0';
+        oct45_wr <= '0';
 
         if rising_edge(clk) then
             if wr_n='0' and cs_n='0' then

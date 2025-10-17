@@ -117,6 +117,12 @@ begin
     variable ns_per_sample : unsigned(15 downto 0) := to_unsigned(22675, 16);
     begin
 
+        clk <= '1';
+        wait for 125 ns;
+        clk <= '0';
+        wait for 125 ns;
+        current_ns := current_ns + to_unsigned(250, 8);
+
         while not endfile(text_file) loop
         
             readline(text_file, text_line);
@@ -163,7 +169,11 @@ begin
                 wait for 125 ns;
                 wr_n <= '1';
                 cs_n <= '1';
-                current_ns := current_ns + to_unsigned(250, 8);
+                clk <= '1';
+                wait for 125 ns;
+                clk <= '0';
+                wait for 125 ns;
+                current_ns := current_ns + to_unsigned(1000, 10);
             else
                 write(OUTPUT, "DATA: (REG" & to_hstring(reg) & ") = " & to_hstring(data_byte) & LF);
                 a0 <= '0';
@@ -176,7 +186,11 @@ begin
                 wait for 125 ns;
                 wr_n <= '1';
                 cs_n <= '1';
-                current_ns := current_ns + to_unsigned(250, 8);
+                clk <= '1';
+                wait for 125 ns;
+                clk <= '0';
+                wait for 125 ns;
+                current_ns := current_ns + to_unsigned(1000, 10);
             end if;
 
         end loop;
