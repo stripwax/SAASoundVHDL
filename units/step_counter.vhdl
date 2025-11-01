@@ -24,7 +24,7 @@ use IEEE.NUMERIC_STD.all;
 
 entity step_counter is
     port (
-        clk: in bit;
+        clk: in std_logic;
         step_ctr: out unsigned(5 downto 0) := (others=>'0')
     );
 end step_counter;
