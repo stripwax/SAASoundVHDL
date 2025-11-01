@@ -95,7 +95,20 @@ architecture behaviour of saa1099_digital_output is
 
     signal oct01_wr, oct23_wr, oct45_wr: std_logic;
 
+    signal amp0l_mask_out, amp0r_mask_out, amp1l_mask_out, amp1r_mask_out, amp2l_mask_out, amp2r_mask_out, amp3l_mask_out, amp3r_mask_out, amp4l_mask_out, amp4r_mask_out, amp5l_mask_out, amp5r_mask_out : std_logic;
+    signal step_ctr : unsigned(5 downto 0);
+
+    -- debugging:
+    signal outl_sum : unsigned(2 downto 0);
+    signal outr_sum : unsigned(2 downto 0);
+
 begin
+
+    STP: entity work.step_counter
+        port map (
+            clk => clk,
+            step_ctr => step_ctr
+        );
 
     OSC0: entity work.osc
         port map (
@@ -163,19 +176,130 @@ begin
             trigger => osc5_trigger
         );
 
-    -- temp bodge:
-    outl(0) <= osc0_output or (not enable);
-    outl(1) <= osc1_output or (not enable);
-    outl(2) <= osc2_output or (not enable);
-    outl(3) <= osc3_output or (not enable);
-    outl(4) <= osc4_output or (not enable);
-    outl(5) <= osc5_output or (not enable);
-    outr(0) <= osc0_output or (not enable);
-    outr(1) <= osc1_output or (not enable);
-    outr(2) <= osc2_output or (not enable);
-    outr(3) <= osc3_output or (not enable);
-    outr(4) <= osc4_output or (not enable);
-    outr(5) <= osc5_output or (not enable);
+    AMP0L: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp0(3 downto 0)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq0_en,
+            chop_mask => amp0l_mask_out
+        );
+    AMP0R: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp0(7 downto 4)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq0_en,
+            chop_mask => amp0r_mask_out
+        );
+    AMP1L: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp1(3 downto 0)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq1_en,
+            chop_mask => amp1l_mask_out
+        );
+    AMP1R: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp1(7 downto 4)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq1_en,
+            chop_mask => amp1r_mask_out
+        );
+    AMP2L: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp2(3 downto 0)),
+            envelope_level => "0000",  -- temp bodge
+            envelope_enabled => env0_en,
+            frequency_enabled => freq2_en,
+            chop_mask => amp2l_mask_out
+        );
+    AMP2R: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp2(7 downto 4)),
+            envelope_level => "0000",  -- temp bodge
+            envelope_enabled => env0_en,
+            frequency_enabled => freq2_en,
+            chop_mask => amp2r_mask_out
+        );
+    AMP3L: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp3(3 downto 0)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq3_en,
+            chop_mask => amp3l_mask_out
+        );
+    AMP3R: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp3(7 downto 4)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq3_en,
+            chop_mask => amp3r_mask_out
+        );
+    AMP4L: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp4(3 downto 0)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq4_en,
+            chop_mask => amp4l_mask_out
+        );
+    AMP4R: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp4(7 downto 4)),
+            envelope_level => "XXXX",
+            envelope_enabled => '0',
+            frequency_enabled => freq4_en,
+            chop_mask => amp4r_mask_out
+        );
+    AMP5L: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp5(3 downto 0)),
+            envelope_level => "0000",  -- temp bodge
+            envelope_enabled => env1_en,
+            frequency_enabled => freq5_en,
+            chop_mask => amp5l_mask_out
+        );
+    AMP5R: entity work.amp
+        port map (
+            step_ctr => step_ctr,
+            amplitude_level => unsigned(amp5(7 downto 4)),
+            envelope_level => "0000",  -- temp bodge
+            envelope_enabled => env1_en,
+            frequency_enabled => freq5_en,
+            chop_mask => amp5r_mask_out
+        );
+
+    outl(0) <= (osc0_output and amp0l_mask_out) or (not enable);
+    outl(1) <= (osc1_output and amp1l_mask_out) or (not enable);
+    outl(2) <= (osc2_output and amp2l_mask_out) or (not enable);
+    outl(3) <= (osc3_output and amp3l_mask_out) or (not enable);
+    outl(4) <= (osc4_output and amp4l_mask_out) or (not enable);
+    outl(5) <= (osc5_output and amp5l_mask_out) or (not enable);
+    outr(0) <= (osc0_output and amp0r_mask_out) or (not enable);
+    outr(1) <= (osc1_output and amp1r_mask_out) or (not enable);
+    outr(2) <= (osc2_output and amp2r_mask_out) or (not enable);
+    outr(3) <= (osc3_output and amp3r_mask_out) or (not enable);
+    outr(4) <= (osc4_output and amp4r_mask_out) or (not enable);
+    outr(5) <= (osc5_output and amp5r_mask_out) or (not enable);
+
+    outl_sum <= unsigned("00" & outl(0 downto 0)) + unsigned("00" & outl(1 downto 1)) + unsigned("00" & outl(2 downto 2)) + unsigned("00" & outl(3 downto 3)) + unsigned("00" & outl(4 downto 4)) + unsigned("00" & outl(5 downto 5));
+    outr_sum <= unsigned("00" & outr(0 downto 0)) + unsigned("00" & outr(1 downto 1)) + unsigned("00" & outr(2 downto 2)) + unsigned("00" & outr(3 downto 3)) + unsigned("00" & outr(4 downto 4)) + unsigned("00" & outr(5 downto 5));
 
 /*
     NOISE0: entity work.noise_bitstream
@@ -199,41 +323,6 @@ begin
         );
 
     CLOCKS : entity work.clocks
-        port map (
-
-        );
-
-    STEP_COUNTER : entity work.step_counter
-        port map (
-
-        );
-
-    AMP0 : entity work.amp
-        port map (
-
-        );
-    
-    AMP1 : entity work.amp
-        port map (
-
-        );
-
-    AMP2 : entity work.amp
-        port map (
-
-        );
-
-    AMP3 : entity work.amp
-        port map (
-
-        );
-
-    AMP4 : entity work.amp
-        port map (
-
-        );
-
-    AMP5 : entity work.amp
         port map (
 
         );
