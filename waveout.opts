@@ -5,3 +5,5 @@ $ version 1.1
 # Signals in entities :
 /tb_saa1099_sim/outl
 /tb_saa1099_sim/outr
+/tb_saa1099_sim/saa_0/outl_sum
+/tb_saa1099_sim/saa_0/outr_sum
