@@ -27,7 +27,7 @@ entity amp is
     --           test case: try enabling multiple channels with synchronised osc and changing osc levels
     --           test case: try setting 'DAC' mode (env enabled, osc mixer disabled) and changing osc levels AND env leves
     port(
-        step_counter: in unsigned(5 downto 0);
+        step_ctr: in unsigned(5 downto 0);
         amplitude_level: in unsigned(3 downto 0);
         envelope_level: in unsigned(3 downto 0);
         envelope_enabled: in std_logic;
@@ -46,17 +46,17 @@ architecture behaviour of amp is
         signal env_bitstream: std_logic;
 begin
 
-        C <= step_counter;
+        C <= step_ctr;
 
         A(3) <= amplitude_level(3);
         A(2) <= amplitude_level(2);
         A(1) <= amplitude_level(1);
-        A(0) <= amplitude_level(0) and not envelope_enabled;
+        A(0) <= amplitude_level(0) and not envelope_enabled; -- I still cannot understand the logic behind this behaviour
 
         E(3) <= envelope_level(3);
         E(2) <= envelope_level(2);
         E(1) <= envelope_level(1);
-        E(0) <= envelope_level(0); -- decision about whether to handle "3-bit envelope mode" here, or in envelope entity
+        E(0) <= envelope_level(0);
 
         amp_step_0_3 <= '0';
         amp_step_4_7 <= A(0) AND C(2) AND NOT (C(3) OR C(4) OR C(5));
