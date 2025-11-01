@@ -27,19 +27,19 @@ end tb_saa1099_sim;
 
 
 architecture behav of tb_saa1099_sim is
-  --  Declaration of the component that will be instantiated.
-  component saa1099_digital_output
-  port (
+    --  Declaration of the component that will be instantiated.
+    component saa1099_digital_output
+    port (
         wr_n, cs_n, clk, a0 : in std_logic;
         dtack_n : out std_logic;
         d : in std_logic_vector(7 downto 0);
         outl : out std_logic_vector(5 downto 0);
         outr : out std_logic_vector(5 downto 0)
     );
-  end component;
+    end component;
 
-  --  Specifies which entity is bound with the component.
-  for saa_0: saa1099_digital_output use entity work.saa1099_digital_output;
+    --  Specifies which entity is bound with the component.
+    for saa_0: saa1099_digital_output use entity work.saa1099_digital_output;
     signal wr_n, cs_n, clk, a0 : std_logic;
     signal dtack_n : std_logic;
     signal d : std_logic_vector(7 downto 0);
@@ -47,45 +47,45 @@ architecture behav of tb_saa1099_sim is
     signal outr : std_logic_vector(5 downto 0);
 
     function decodeDigit(c : character) return integer is
-    variable retVal : integer;
-    variable l : line;
-begin
-    retVal := character'pos(c) - character'pos('0');
-    if retVal < 0 or retVal > 9 then
-        return -1;
-    else
-        return retVal;
-    end if;
-end function decodeDigit;
-
-procedure read(l : inout line; val : inout unsigned; ok : out boolean) is
-    variable c : character;
-    variable done : boolean := false;
-    variable c_ok : boolean := true;
-    variable retVal : unsigned(val'length - 1 downto 0) := (others => '0');
-    variable something : boolean := false;
-begin
-    while not done loop
-        read(l, c, c_ok);
-        if not c_ok then
-            done := true;
+        variable retVal : integer;
+        variable l : line;
+    begin
+        retVal := character'pos(c) - character'pos('0');
+        if retVal < 0 or retVal > 9 then
+            return -1;
         else
-            if (decodeDigit(c) < 0) then
+            return retVal;
+        end if;
+    end function decodeDigit;
+
+    procedure read(l : inout line; val : inout unsigned; ok : out boolean) is
+        variable c : character;
+        variable done : boolean := false;
+        variable c_ok : boolean := true;
+        variable retVal : unsigned(val'length - 1 downto 0) := (others => '0');
+        variable something : boolean := false;
+    begin
+        while not done loop
+            read(l, c, c_ok);
+            if not c_ok then
                 done := true;
             else
-                something := true;
-                retVal := resize(retVal * to_unsigned(10, 4), val'length);
-                retVal := retVal + to_unsigned(decodeDigit(c), 4);
+                if (decodeDigit(c) < 0) then
+                    done := true;
+                else
+                    something := true;
+                    retVal := resize(retVal * to_unsigned(10, 4), val'length);
+                    retVal := retVal + to_unsigned(decodeDigit(c), 4);
+                end if;
             end if;
+        end loop;
+        val := retVal;
+        if something then
+            ok := true;
+        else
+            ok := c_ok;
         end if;
-    end loop;
-    val := retVal;
-    if something then
-        ok := true;
-    else
-        ok := c_ok;
-    end if;
-end procedure read;
+    end procedure read;
 
 begin
   --  Component instantiation.
