@@ -28,23 +28,24 @@ architecture behaviour of tb_clocks is
   component clocks
   port (
         clk: in std_logic;
-        clk_div: out std_logic_vector(9 downto 0);
-        pulse_div: out std_logic_vector(9 downto 0)
+        pulse_div: out std_logic_vector(2 downto 0);
+        step_ctr: out unsigned(5 downto 0)
     );
   end component;
 
   --  Specifies which entity is bound with the component.
   for clocks_0: clocks use entity work.clocks;
     signal clk: std_logic;
-    signal clk_div: std_logic_vector(9 downto 0);
-    signal pulse_div: std_logic_vector(9 downto 0);
+    signal pulse_div: std_logic_vector(2 downto 0);
+    signal step_ctr: unsigned(5 downto 0);
 begin
   --  Component instantiation.
-  clocks_0: clocks port map (clk => clk, clk_div => clk_div, pulse_div => pulse_div);
+  clocks_0: clocks port map (clk => clk, pulse_div => pulse_div, step_ctr => step_ctr);
 
   --  This process does the real job.
   process
-    variable prev : unsigned(9 downto 0);
+    variable ctr : unsigned(9 downto 0);
+    variable next_ctr : unsigned(9 downto 0);
   begin
 
     clk <= '0';
@@ -52,46 +53,47 @@ begin
 
     clk <= '1';
     wait for 1 ns;
-    assert clk_div = "0000000000";
-    assert pulse_div = "1111111111";
+    assert step_ctr = "000000";
+    assert pulse_div = "111";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
-    assert clk_div = "0000000001";
-    assert pulse_div = "0000000000";
+    assert step_ctr = "000001";
+    assert pulse_div = "000";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
-    assert clk_div = "0000000010";
-    assert pulse_div = "0000000001";
+    assert step_ctr = "000010";
+    assert pulse_div = "000";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
-    assert clk_div = "0000000011";
-    assert pulse_div = "0000000000";
+    assert step_ctr = "000011";
+    assert pulse_div = "000";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
-    assert clk_div = "0000000100";
-    assert pulse_div = "0000000011";
+    assert step_ctr = "000100";
+    assert pulse_div = "000";
     clk <= '0';
     wait for 1 ns;
 
-    prev := unsigned(clk_div);
+    ctr := "0000000000" + step_ctr;
 
     for i in 1 to 262144 loop
         clk <= '1';
         wait for 1 ns;
-        assert unsigned(clk_div) = prev+1;
-        prev := unsigned(clk_div);
+        next_ctr := ctr+1;
+        assert unsigned(step_ctr) = next_ctr(5 downto 0);
+        ctr := next_ctr;
         clk <= '0';
         wait for 1 ns;
     end loop;

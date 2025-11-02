@@ -26,23 +26,25 @@ entity clocks is
   -- Is this what the datasheet means by /8 octave clocks and /3 internal clocks?
   port (
     clk: in std_logic;
-    clk_div: out std_logic_vector(9 downto 0) := (others => '1');
-    pulse_div: out std_logic_vector(9 downto 0)
+    step_ctr: out unsigned(5 downto 0);
+    pulse_div: out std_logic_vector(2 downto 0)
     );
 end clocks;
 
 architecture behaviour of clocks is
+    signal clk_div: unsigned(9 downto 0) := (others => '1');
 begin
     process(clk)
-        variable next_clk_div: std_logic_vector(9 downto 0);
+        variable next_clk_div: unsigned(9 downto 0);
     begin
     if rising_edge(clk) then
         -- question: which clocks (if any) still tick when SYNC bit is set? I may need to connect to SYNC bit here.
         -- question: are all these clocks shared across all the oscs and noise generators, or do they have their own counters?
         --           (I assume all shared to reduce silicon, but should be a test case with chip to confirm)
         -- question: is it valid to just send out the clocks as pulses, rather than square waves?  It seems to simplify things.
-        next_clk_div := std_logic_vector(unsigned(clk_div) + 1);
-        pulse_div <= (clk_div AND NOT next_clk_div);
+        next_clk_div := clk_div + 1;
+        pulse_div <= (std_logic_vector(clk_div(9 downto 7)) AND NOT std_logic_vector(next_clk_div(9 downto 7)));
+        step_ctr <= next_clk_div(5 downto 0);
         clk_div <= next_clk_div;
     end if;
     end process;

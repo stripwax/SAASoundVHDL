@@ -96,7 +96,7 @@ architecture behaviour of saa1099_digital_output is
     signal oct01_wr, oct23_wr, oct45_wr: std_logic;
 
     signal noise0_output, noise1_output : std_logic;
-    signal clocks_pulse_div : std_logic_vector(9 downto 0);
+    signal clocks_pulse_div : std_logic_vector(2 downto 0);
     signal amp0l_mask_out, amp0r_mask_out, amp1l_mask_out, amp1r_mask_out, amp2l_mask_out, amp2r_mask_out, amp3l_mask_out, amp3r_mask_out, amp4l_mask_out, amp4r_mask_out, amp5l_mask_out, amp5r_mask_out : std_logic;
     signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
     signal step_ctr : unsigned(5 downto 0);
@@ -110,12 +110,7 @@ begin
     CLOCKS: entity work.clocks
         port map (
             clk => clk,
-            pulse_div => clocks_pulse_div
-        );
-
-    STP: entity work.step_counter
-        port map (
-            clk => clk,
+            pulse_div => clocks_pulse_div,
             step_ctr => step_ctr
         );
 
@@ -297,9 +292,9 @@ begin
     NOISE0: entity work.noise_bitstream
         port map (
             clk => clk,
-            trigger_313 => clocks_pulse_div(7),
-            trigger_156 => clocks_pulse_div(8),
-            trigger_76 => clocks_pulse_div(9),
+            trigger_313 => clocks_pulse_div(0),
+            trigger_156 => clocks_pulse_div(1),
+            trigger_76 => clocks_pulse_div(2),
             trigger_osc => osc0_trigger,
             enabled => noise0_sel,
             bitstream => noise0_output
@@ -308,9 +303,9 @@ begin
     NOISE1: entity work.noise_bitstream
         port map (
             clk => clk,
-            trigger_313 => clocks_pulse_div(7),
-            trigger_156 => clocks_pulse_div(8),
-            trigger_76 => clocks_pulse_div(9),
+            trigger_313 => clocks_pulse_div(0),
+            trigger_156 => clocks_pulse_div(1),
+            trigger_76 => clocks_pulse_div(2),
             trigger_osc => osc3_trigger,
             enabled => noise1_sel,
             bitstream => noise1_output
