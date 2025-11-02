@@ -95,6 +95,8 @@ architecture behaviour of saa1099_digital_output is
 
     signal oct01_wr, oct23_wr, oct45_wr: std_logic;
 
+    signal noise0_output, noise1_output : std_logic;
+    signal clocks_pulse_div : std_logic_vector(9 downto 0);
     signal amp0l_mask_out, amp0r_mask_out, amp1l_mask_out, amp1r_mask_out, amp2l_mask_out, amp2r_mask_out, amp3l_mask_out, amp3r_mask_out, amp4l_mask_out, amp4r_mask_out, amp5l_mask_out, amp5r_mask_out : std_logic;
     signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
     signal step_ctr : unsigned(5 downto 0);
@@ -104,6 +106,12 @@ architecture behaviour of saa1099_digital_output is
     signal outr_sum : unsigned(2 downto 0);
 
 begin
+
+    CLOCKS: entity work.clocks
+        port map (
+            clk => clk,
+            pulse_div => clocks_pulse_div
+        );
 
     STP: entity work.step_counter
         port map (
@@ -286,11 +294,33 @@ begin
             chop_mask => amp5r_mask_out
         );
 
+    NOISE0: entity work.noise_bitstream
+        port map (
+            clk => clk,
+            trigger_313 => clocks_pulse_div(7),
+            trigger_156 => clocks_pulse_div(8),
+            trigger_76 => clocks_pulse_div(9),
+            trigger_osc => osc1_trigger,
+            enabled => noise0_sel,
+            bitstream => noise0_output
+        );
+
+    NOISE1: entity work.noise_bitstream
+        port map (
+            clk => clk,
+            trigger_313 => clocks_pulse_div(7),
+            trigger_156 => clocks_pulse_div(8),
+            trigger_76 => clocks_pulse_div(9),
+            trigger_osc => osc4_trigger,
+            enabled => noise1_sel,
+            bitstream => noise1_output
+        );
+
     MIXER0 : entity work.mixer
         port map (
             noise_enable => noise0_en,
             freq_enable => freq0_en,
-            noise_bitstream => '0',  -- temp bodge,
+            noise_bitstream => noise0_output,
             freq_bitstream => osc0_output,
             mixed => mixer0_out
         );
@@ -299,7 +329,7 @@ begin
         port map (
             noise_enable => noise1_en,
             freq_enable => freq1_en,
-            noise_bitstream => '0',  -- temp bodge,
+            noise_bitstream => noise0_output,
             freq_bitstream => osc1_output,
             mixed => mixer1_out
         );
@@ -308,7 +338,7 @@ begin
         port map (
             noise_enable => noise2_en,
             freq_enable => freq2_en,
-            noise_bitstream => '0',  -- temp bodge,
+            noise_bitstream => noise0_output,
             freq_bitstream => osc2_output,
             mixed => mixer2_out
         );
@@ -317,7 +347,7 @@ begin
         port map (
             noise_enable => noise3_en,
             freq_enable => freq3_en,
-            noise_bitstream => '0',  -- temp bodge,
+            noise_bitstream => noise1_output,
             freq_bitstream => osc3_output,
             mixed => mixer3_out
         );
@@ -326,7 +356,7 @@ begin
         port map (
             noise_enable => noise4_en,
             freq_enable => freq4_en,
-            noise_bitstream => '0',  -- temp bodge,
+            noise_bitstream => noise1_output,
             freq_bitstream => osc4_output,
             mixed => mixer4_out
         );
@@ -335,7 +365,7 @@ begin
         port map (
             noise_enable => noise5_en,
             freq_enable => freq5_en,
-            noise_bitstream => '0',  -- temp bodge,
+            noise_bitstream => noise1_output,
             freq_bitstream => osc5_output,
             mixed => mixer5_out
         );
@@ -358,16 +388,6 @@ begin
     outr_sum <= unsigned("00" & outr(0 downto 0)) + unsigned("00" & outr(1 downto 1)) + unsigned("00" & outr(2 downto 2)) + unsigned("00" & outr(3 downto 3)) + unsigned("00" & outr(4 downto 4)) + unsigned("00" & outr(5 downto 5));
 
 /*
-    NOISE0: entity work.noise_bitstream
-        port map (
-
-        );
-
-    NOISE1: entity work.noise_bitstream
-        port map (
-
-        );
-
     ENV0 : entity work.env
         port map (
         
@@ -376,11 +396,6 @@ begin
     ENV1 : entity work.env
         port map (
         
-        );
-
-    CLOCKS : entity work.clocks
-        port map (
-
         );
 */
     process (clk)
