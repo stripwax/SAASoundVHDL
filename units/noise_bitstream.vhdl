@@ -31,21 +31,21 @@ entity noise_bitstream is
   -- takes as input the various frequency sources and triggers
   -- and generates the corresponding output (1-bit) bitstream
   port (
-    clk: in bit;
-    trigger_313, trigger_156, trigger_76, trigger_osc : in bit;
-    enabled: in bit_vector(1 downto 0);
-    bitstream: out bit
+    clk: in std_logic;
+    trigger_313, trigger_156, trigger_76, trigger_osc : in std_logic;
+    enabled: in std_logic_vector(1 downto 0);
+    bitstream: out std_logic
     );
 end noise_bitstream;
 
 architecture behaviour of noise_bitstream is
-signal lsfr: bit_vector(17 downto 0) := "000000000000000001";  -- need power-on initialisation
+signal lsfr: std_logic_vector(17 downto 0) := "000000000000000001";  -- need power-on initialisation  -- question, are BOTH noise generators initialised identically?
 begin
     process(clk)
 
-    variable triggered: bit;
-    variable lsb : bit;
-    variable mask: bit_vector(17 downto 0);
+    variable triggered: std_logic;
+    variable lsb : std_logic;
+    variable mask: std_logic_vector(17 downto 0);
 
     begin
     if rising_edge(clk) then
@@ -54,6 +54,7 @@ begin
             when "01" => triggered := trigger_156;
             when "10" => triggered := trigger_76;
             when "11" => triggered := trigger_osc;
+            when others => triggered := trigger_313;
         end case;
         if triggered then
             lsb := lsfr(0);

@@ -15,6 +15,11 @@
 --    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 --  A testbench has no ports.
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.all;
+use IEEE.NUMERIC_STD.all;
+
 use work.noise_bitstream;
 
 entity tb_noise_bitstream is
@@ -24,17 +29,17 @@ architecture behav of tb_noise_bitstream is
   --  Declaration of the component that will be instantiated.
   component noise_bitstream
   port (
-    clk: in bit;
-    trigger_313, trigger_156, trigger_76, trigger_osc : in bit;
-    enabled: in bit_vector(1 downto 0);
-    bitstream: out bit
+    clk: in std_logic;
+    trigger_313, trigger_156, trigger_76, trigger_osc : in std_logic;
+    enabled: in std_logic_vector(1 downto 0);
+    bitstream: out std_logic
     );
   end component;
 
   --  Specifies which entity is bound with the component.
   for noise_bitstream_0: noise_bitstream use entity work.noise_bitstream;
-  signal clk, trigger_313, trigger_156, trigger_76, trigger_osc, bitstream : bit;
-  signal enabled : bit_vector(1 downto 0);
+  signal clk, trigger_313, trigger_156, trigger_76, trigger_osc, bitstream : std_logic;
+  signal enabled : std_logic_vector(1 downto 0);
 begin
   --  Component instantiation.
   noise_bitstream_0: noise_bitstream port map (clk => clk, trigger_313 => trigger_313, trigger_156 => trigger_156, trigger_76 => trigger_76, trigger_osc => trigger_osc, enabled => enabled, bitstream => bitstream);
@@ -42,12 +47,12 @@ begin
   --  This process does the real job.
   process
 
-    constant expected_1 : bit_vector := "1000000000010000001000100000000001001000";
-    constant expected_2 : bit_vector := "1000100100000011000000100010000010000100";
-    constant expected_3 : bit_vector := "1001100010110010001100000110101010000001";
-    constant expected_4 : bit_vector := "0100101010001001000000111000001000110000";
-    constant expected_5 : bit_vector := "1010011010011000111110101011100101101001";
-    variable prev : bit;
+    constant expected_1 : std_logic_vector := "1000000000010000001000100000000001001000";
+    constant expected_2 : std_logic_vector := "1000100100000011000000100010000010000100";
+    constant expected_3 : std_logic_vector := "1001100010110010001100000110101010000001";
+    constant expected_4 : std_logic_vector := "0100101010001001000000111000001000110000";
+    constant expected_5 : std_logic_vector := "1010011010011000111110101011100101101001";
+    variable prev : std_logic;
 
  begin
     -- check initial values for first few
