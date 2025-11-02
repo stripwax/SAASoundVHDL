@@ -96,6 +96,7 @@ architecture behaviour of saa1099_digital_output is
     signal oct01_wr, oct23_wr, oct45_wr: std_logic;
 
     signal amp0l_mask_out, amp0r_mask_out, amp1l_mask_out, amp1r_mask_out, amp2l_mask_out, amp2r_mask_out, amp3l_mask_out, amp3r_mask_out, amp4l_mask_out, amp4r_mask_out, amp5l_mask_out, amp5r_mask_out : std_logic;
+    signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
     signal step_ctr : unsigned(5 downto 0);
 
     -- debugging:
@@ -285,18 +286,73 @@ begin
             chop_mask => amp5r_mask_out
         );
 
-    outl(0) <= (osc0_output and amp0l_mask_out) or (not enable);
-    outl(1) <= (osc1_output and amp1l_mask_out) or (not enable);
-    outl(2) <= (osc2_output and amp2l_mask_out) or (not enable);
-    outl(3) <= (osc3_output and amp3l_mask_out) or (not enable);
-    outl(4) <= (osc4_output and amp4l_mask_out) or (not enable);
-    outl(5) <= (osc5_output and amp5l_mask_out) or (not enable);
-    outr(0) <= (osc0_output and amp0r_mask_out) or (not enable);
-    outr(1) <= (osc1_output and amp1r_mask_out) or (not enable);
-    outr(2) <= (osc2_output and amp2r_mask_out) or (not enable);
-    outr(3) <= (osc3_output and amp3r_mask_out) or (not enable);
-    outr(4) <= (osc4_output and amp4r_mask_out) or (not enable);
-    outr(5) <= (osc5_output and amp5r_mask_out) or (not enable);
+    MIXER0 : entity work.mixer
+        port map (
+            noise_enable => noise0_en,
+            freq_enable => freq0_en,
+            noise_bitstream => '0',  -- temp bodge,
+            freq_bitstream => osc0_output,
+            mixed => mixer0_out
+        );
+
+    MIXER1 : entity work.mixer
+        port map (
+            noise_enable => noise1_en,
+            freq_enable => freq1_en,
+            noise_bitstream => '0',  -- temp bodge,
+            freq_bitstream => osc1_output,
+            mixed => mixer1_out
+        );
+
+    MIXER2 : entity work.mixer
+        port map (
+            noise_enable => noise2_en,
+            freq_enable => freq2_en,
+            noise_bitstream => '0',  -- temp bodge,
+            freq_bitstream => osc2_output,
+            mixed => mixer2_out
+        );
+
+    MIXER3 : entity work.mixer
+        port map (
+            noise_enable => noise3_en,
+            freq_enable => freq3_en,
+            noise_bitstream => '0',  -- temp bodge,
+            freq_bitstream => osc3_output,
+            mixed => mixer3_out
+        );
+
+    MIXER4 : entity work.mixer
+        port map (
+            noise_enable => noise4_en,
+            freq_enable => freq4_en,
+            noise_bitstream => '0',  -- temp bodge,
+            freq_bitstream => osc4_output,
+            mixed => mixer4_out
+        );
+
+    MIXER5 : entity work.mixer
+        port map (
+            noise_enable => noise5_en,
+            freq_enable => freq5_en,
+            noise_bitstream => '0',  -- temp bodge,
+            freq_bitstream => osc5_output,
+            mixed => mixer5_out
+        );
+
+
+    outl(0) <= (mixer0_out and amp0l_mask_out) or (not enable);
+    outl(1) <= (mixer1_out and amp1l_mask_out) or (not enable);
+    outl(2) <= (mixer2_out and amp2l_mask_out) or (not enable);
+    outl(3) <= (mixer3_out and amp3l_mask_out) or (not enable);
+    outl(4) <= (mixer4_out and amp4l_mask_out) or (not enable);
+    outl(5) <= (mixer5_out and amp5l_mask_out) or (not enable);
+    outr(0) <= (mixer0_out and amp0r_mask_out) or (not enable);
+    outr(1) <= (mixer1_out and amp1r_mask_out) or (not enable);
+    outr(2) <= (mixer2_out and amp2r_mask_out) or (not enable);
+    outr(3) <= (mixer3_out and amp3r_mask_out) or (not enable);
+    outr(4) <= (mixer4_out and amp4r_mask_out) or (not enable);
+    outr(5) <= (mixer5_out and amp5r_mask_out) or (not enable);
 
     outl_sum <= unsigned("00" & outl(0 downto 0)) + unsigned("00" & outl(1 downto 1)) + unsigned("00" & outl(2 downto 2)) + unsigned("00" & outl(3 downto 3)) + unsigned("00" & outl(4 downto 4)) + unsigned("00" & outl(5 downto 5));
     outr_sum <= unsigned("00" & outr(0 downto 0)) + unsigned("00" & outr(1 downto 1)) + unsigned("00" & outr(2 downto 2)) + unsigned("00" & outr(3 downto 3)) + unsigned("00" & outr(4 downto 4)) + unsigned("00" & outr(5 downto 5));
@@ -323,36 +379,6 @@ begin
         );
 
     CLOCKS : entity work.clocks
-        port map (
-
-        );
-
-    MIXER0 : entity work.mixer
-        port map (
-
-        );
-
-    MIXER1 : entity work.mixer
-        port map (
-
-        );
-
-    MIXER2 : entity work.mixer
-        port map (
-
-        );
-
-    MIXER3 : entity work.mixer
-        port map (
-
-        );
-
-    MIXER4 : entity work.mixer
-        port map (
-
-        );
-
-    MIXER5 : entity work.mixer
         port map (
 
         );
