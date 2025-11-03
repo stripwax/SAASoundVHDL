@@ -23,9 +23,9 @@ entity mixer is
   -- takes as input the outputs of noise generator, frequency generator
   -- and the corresponding select/enable bits,
   -- and generates the corresponding output (1-bit) bitstream
-  -- by simply ANDing the signals together
-  -- In order to do this, we treat the output of noise as 1 when "noise_enabled" is false; and
-  -- similarly we treat the output of oscillator as 1 when "freq_enable" is false
+  -- by simply ORing the signals together
+  -- In order to do this, we treat the output of noise as 0 when "noise_enabled" is false; and
+  -- similarly we treat the output of oscillator as 0 when "freq_enable" is false
   -- The amplitude (pdm) generator step takes place after mixing
   port (
     noise_enable, freq_enable : in std_logic;
@@ -37,7 +37,7 @@ end mixer;
 architecture behaviour of mixer is
 signal noise_resolved_bitstream, freq_resolved_bitstream: std_logic;
 begin
-    noise_resolved_bitstream <= (noise_bitstream or not noise_enable);
-    freq_resolved_bitstream <= (freq_bitstream or not freq_enable);
-    mixed <= noise_resolved_bitstream and freq_resolved_bitstream;
+    noise_resolved_bitstream <= (noise_bitstream and noise_enable); -- output low if disabled, so we can OR with freq
+    freq_resolved_bitstream <= (freq_bitstream and freq_enable); -- output low if disabled, so we can OR with noise
+    mixed <= noise_resolved_bitstream or freq_resolved_bitstream; -- output is mixed OR of inputs, or just one if only one enabled, or output low if both disabled
 end behaviour;
