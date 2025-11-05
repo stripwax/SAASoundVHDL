@@ -207,6 +207,7 @@ begin
         port map (
             noise_enable => noise0_en,
             freq_enable => freq0_en,
+            env_enable => '0',
             noise_bitstream => noise0_output,
             freq_bitstream => osc0_output,
             mixed => mixer0_out
@@ -216,6 +217,7 @@ begin
         port map (
             noise_enable => noise1_en,
             freq_enable => freq1_en,
+            env_enable => '0',
             noise_bitstream => noise0_output,
             freq_bitstream => osc1_output,
             mixed => mixer1_out
@@ -225,6 +227,7 @@ begin
         port map (
             noise_enable => noise2_en,
             freq_enable => freq2_en,
+            env_enable => env0_en,
             noise_bitstream => noise0_output,
             freq_bitstream => osc2_output,
             mixed => mixer2_out
@@ -234,6 +237,7 @@ begin
         port map (
             noise_enable => noise3_en,
             freq_enable => freq3_en,
+            env_enable => '0',
             noise_bitstream => noise1_output,
             freq_bitstream => osc3_output,
             mixed => mixer3_out
@@ -243,6 +247,7 @@ begin
         port map (
             noise_enable => noise4_en,
             freq_enable => freq4_en,
+            env_enable => '0',
             noise_bitstream => noise1_output,
             freq_bitstream => osc4_output,
             mixed => mixer4_out
@@ -252,6 +257,7 @@ begin
         port map (
             noise_enable => noise5_en,
             freq_enable => freq5_en,
+            env_enable => env1_en,
             noise_bitstream => noise1_output,
             freq_bitstream => osc5_output,
             mixed => mixer5_out

@@ -72,12 +72,7 @@ begin
         amp_step_32_47_r <= A_r(2) AND C(5) AND NOT C(4);
 
         chop_mask_r <= (amp_step_0_3_r OR amp_step_4_7_r OR amp_step_8_15_r OR amp_step_16_31_48_63_r OR amp_step_32_47_r);
-
-        -- if env is enabled, input is inverted, so that 'disabled' tone presents as DC and envelope shaping is audible, as per datasheet
-        -- (and therefore also the amp behaves like a primitive DAC - this is the 'sample output' mode as used by Edwin Blink etc)
-        -- This comes before the envelope generator (even though it has a dependency on the envelope_enabled signal)
-        -- otherwise the "amp behaves like a primitive DAC" behaviour would not function correctly.
-        output_l <= (input xor envelope_enabled) and chop_mask_l;
-        output_r <= (input xor envelope_enabled) and chop_mask_r;
+        output_l <= input and chop_mask_l;
+        output_r <= input and chop_mask_r;
 
 end behaviour;

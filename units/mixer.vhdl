@@ -23,21 +23,44 @@ entity mixer is
   -- takes as input the outputs of noise generator, frequency generator
   -- and the corresponding select/enable bits,
   -- and generates the corresponding output (1-bit) bitstream
-  -- by simply ORing the signals together
+  -- by simply ANDing the signals together
   -- In order to do this, we treat the output of noise as 0 when "noise_enabled" is false; and
   -- similarly we treat the output of oscillator as 0 when "freq_enable" is false
-  -- The amplitude (pdm) generator step takes place after mixing
+  -- The amplitude (pdm) chopping step takes place after mixing
+  -- (and for channels that also have envelope generators (2 and 5), the envelope (pdm) chopping takes place
+  --  after that, after mixing and after amplitude (pdm) chopping.  Because of a required behaviour of the envelope
+  --  output, the mixer actually outputs 1 in the case where both "noise_enabled" and "freq_enabled" are false.
+  --  This 'feature' could be implemented either by the mixer or by the amp (pdm) that follows it; I don't really care.
+  --  But without this, the "amp behaves like a primitive DAC when env is enabled" behaviour would not function correctly.)
   port (
-    noise_enable, freq_enable : in std_logic;
+    noise_enable, freq_enable, env_enable : in std_logic;
     noise_bitstream, freq_bitstream : in std_logic;
     mixed: out std_logic
     );
 end mixer;
 
 architecture behaviour of mixer is
-signal noise_resolved_bitstream, freq_resolved_bitstream: std_logic;
+  signal noise_resolved_bitstream, freq_resolved_bitstream: std_logic;
 begin
-    noise_resolved_bitstream <= (noise_bitstream and noise_enable); -- output low if disabled, so we can OR with freq
-    freq_resolved_bitstream <= (freq_bitstream and freq_enable); -- output low if disabled, so we can OR with noise
-    mixed <= noise_resolved_bitstream or freq_resolved_bitstream; -- output is mixed OR of inputs, or just one if only one enabled, or output low if both disabled
+    --
+    -- NOISE | FREQ | NE | FE | OUTPUT
+    --   X   |  X   | 0  | 0  | 0   -- (or 1 if ENV is enabled, to be multiplied by ENV output)
+    --   0   |  X   | 1  | 0  | 0
+    --   1   |  X   | 1  | 0  | 1
+    --   X   |  0   | 0  | 1  | 0
+    --   X   |  1   | 0  | 1  | 1
+    --   0   |  0   | 1  | 1  | 0
+    --   1   |  0   | 1  | 1  | 0
+    --   0   |  1   | 1  | 1  | 0
+    --   1   |  1   | 1  | 1  | 1
+
+    -- Confirmed that polarity of the NOISE output is unaffected by FE=0 or FE=1
+    -- (NOISE output is always the inverse of the lfsr lsb, regardless of whether freq is enabled or not for that channel)
+    -- TODO simplify mixer by inverting the output of the noise_bitstream instead?
+    noise_resolved_bitstream <= (not noise_bitstream and noise_enable);
+    freq_resolved_bitstream <= (freq_bitstream and freq_enable);
+    mixed <= (noise_resolved_bitstream and freq_resolved_bitstream)
+          or (noise_resolved_bitstream and not freq_enable)
+          or (freq_resolved_bitstream and not noise_enable)
+          or (env_enable and not freq_enable and not noise_enable);
 end behaviour;
