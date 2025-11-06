@@ -36,6 +36,8 @@ bkm.estimate_polynomial()
 * Therefore we could say that the mixer function is (freq AND noise) but where NOISE is the inverse of the LSFR output... or we could say that the mixer is "FREQ OR NOISE" and then this is inverted.  It's not yet possible to know if the oscillator's squarewave output is 0101 or 1010 ; arguably it doesn't matter.
 * However, one thing that DOES matter is whether the oscillator's output immediately after being enabled (e.g. sync/reset going from 1 to 0) starts with a half-cycle of logical 1 , or logical 0.  I have to assume it starts with a half-cycle of logical 1 but I need to also find a good way to determine this empirically (tricky timing to actually observe it directly)
 
+### Features/easter eggs
+* If you set the noise generator to be "oscillator triggered", (and enable the noise output in the mixer and set the volume, etc), and ALSO set the global sync/reset flag, then the output is a 8MHz noise bitstream (modulated by the amplitude etc).  Usually of course the noise generators output noise in audio frequency ranges but with the sync/reset bit set, the noise generator appears to be triggered every clock tick.  Confirmed experimentally on-chip.  See testcase `debuggsaa_noise_8mhz.txt`
 
 ## Automated testing
 
