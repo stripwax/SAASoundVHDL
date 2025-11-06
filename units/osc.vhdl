@@ -69,7 +69,7 @@ begin
                 ctr_phase <= '1';
                 latched_freq <= frequency;
                 latched_octave <= octave;
-                trigger <= '1';  -- unsure about this.  Is that what we need to correctly reproduce the "8mhz noise when sync'd" bug?  does that bug manifest for env generators too?
+                trigger <= '1';  -- this is what reproduces the "8mhz noise when sync'd" bug (feature?)
                 output <= '1';  -- test case: check FRED space demo
             else
 
