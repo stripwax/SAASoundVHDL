@@ -14,6 +14,10 @@
 
 * The PDM chopping logic for amplitude control AND envelope controls works both in the same direction (0-volume amp towards logical 0 and 0-volume env towards logical 0)
 
+## Oscillators (and sync)
+
+* I'm certain that an oscillator's output is 0 when sync bit is set.  Experimentally, setting the 'noise easter egg' mode (see later), with sync=1, output enabled=1, N01:N00==11, noise output enabled=1, and osc (tone) output enabled = FALSE, you can see the noise 4MHz noise at the output of the device, because the mixer is set to output noise only.  If you then change osc (tone) enabled = TRUE, you can see no noise.  Remember, sync is still set.  I believe the mixer outputs the logical "tone AND noise", which I believe confirms that a stopped (sync=True) oscillator outputs logical zero.
+
 ## Noise generators
 
 * When chip is enabled AND sync (reset=1), the noise generators are still running, and indeed are triggered at their maximum (15.6kHz) freq. , equivalent to N01:N00 being set to 00 .  The noise generators themselves are never reset/disabled by the sync/reset bit.  The implication is also that they are constantly running.
