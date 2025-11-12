@@ -74,9 +74,17 @@
 0 16
 0 16 7
 0 28
-0 28 3
-1000 16
-1000 16 0
-2000 28 0
+0 28 3  # should now see 4MHz noise at output.  This is the 'noise easter egg' mode
+50 16
+50 16 0  # should now see 32kHz noise at output.  This is also using the 'noise easter egg' mode
+100 20
+100 20 5  # enabling the tone output for the mixer should actually generate silence, since a stopped (sync=1) oscillator outputs logical 0.  I'm enabling tone output for channels 0 and 2 so you should still see 32kHz noise on channel 1
+150 22
+150 22 0 
+150 20
+150 20 0
+150 28
+150 28 1  # should now see 32kHz noise at output again.  This is the standard (N01:N00=00) noise output mode, sync=False
+200 28 0
 # end
 
