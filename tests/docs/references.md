@@ -17,6 +17,10 @@
 ## Oscillators (and sync)
 
 * I'm certain that an oscillator's output is 0 when sync bit is set.  Experimentally, setting the 'noise easter egg' mode (see later), with sync=1, output enabled=1, N01:N00==11, noise output enabled=1, and osc (tone) output enabled = FALSE, you can see the noise 4MHz noise at the output of the device, because the mixer is set to output noise only.  If you then change osc (tone) enabled = TRUE, you can see no noise.  Remember, sync is still set.  I believe the mixer outputs the logical "tone AND noise", which I believe confirms that a stopped (sync=True) oscillator outputs logical zero.
+* The highest frequency output occurs when Octave=7 and Freq=255 . By counting cycles (or indeed by observing PDM chopping stability), this emits a square wave of 512 clocks-per-half-wave (1024 clocks per full wave @ 8MHz) = 7812.5 Hz .
+* There is a formula you may have seen before: frequency = (15625 * (2^octave)) / (511-note) .  Plugging in octave=7 and note=255 yields 7812.5 Hz as expected.  What this really means is that there is a counter that counts from 0 to (511-note), OR, more likely, from (note) to (511) before resetting back to (note).  This would appear to match the observations.
+
+
 
 ## Noise generators
 
