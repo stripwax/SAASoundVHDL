@@ -96,7 +96,8 @@ architecture behaviour of saa1099_digital_output is
     signal oct01_wr, oct23_wr, oct45_wr: std_logic;
 
     signal noise0_output, noise1_output : std_logic;
-    signal clocks_pulse_div : std_logic_vector(2 downto 0);
+    signal noise_clks : std_logic_vector(2 downto 0);
+    signal octave_clks : std_logic_vector(7 downto 0);
     signal amp0l_out, amp0r_out, amp1l_out, amp1r_out, amp2l_out, amp2r_out, amp3l_out, amp3r_out, amp4l_out, amp4r_out, amp5l_out, amp5r_out : std_logic;
     signal env0l_out, env0r_out, env1l_out, env1r_out : std_logic;
     signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
@@ -111,13 +112,15 @@ begin
     CLOCKS: entity work.clocks
         port map (
             clk => clk,
-            pulse_div => clocks_pulse_div,
+            noise_clks => noise_clks,
+            octave_clks => octave_clks,
             step_ctr => step_ctr
         );
 
     OSC0: entity work.osc
         port map (
             clk => clk,
+            octave_clks => octave_clks,
             sync => sync_rst,
             frequency => unsigned(freq0),
             octave => unsigned(oct0),
@@ -129,6 +132,7 @@ begin
     OSC1: entity work.osc
         port map (
             clk => clk,
+            octave_clks => octave_clks,
             sync => sync_rst,
             frequency => unsigned(freq1),
             octave => unsigned(oct1),
@@ -140,6 +144,7 @@ begin
     OSC2: entity work.osc
         port map (
             clk => clk,
+            octave_clks => octave_clks,
             sync => sync_rst,
             frequency => unsigned(freq2),
             octave => unsigned(oct2),
@@ -151,6 +156,7 @@ begin
     OSC3: entity work.osc
         port map (
             clk => clk,
+            octave_clks => octave_clks,
             sync => sync_rst,
             frequency => unsigned(freq3),
             octave => unsigned(oct3),
@@ -162,6 +168,7 @@ begin
     OSC4: entity work.osc
         port map (
             clk => clk,
+            octave_clks => octave_clks,
             sync => sync_rst,
             frequency => unsigned(freq4),
             octave => unsigned(oct4),
@@ -173,6 +180,7 @@ begin
     OSC5: entity work.osc
         port map (
             clk => clk,
+            octave_clks => octave_clks,
             sync => sync_rst,
             frequency => unsigned(freq5),
             octave => unsigned(oct5),
@@ -184,9 +192,9 @@ begin
     NOISE0: entity work.noise_bitstream
         port map (
             clk => clk,
-            trigger_313 => clocks_pulse_div(0),
-            trigger_156 => clocks_pulse_div(1),
-            trigger_76 => clocks_pulse_div(2),
+            trigger_313 => noise_clks(0),
+            trigger_156 => noise_clks(1),
+            trigger_76 => noise_clks(2),
             trigger_osc => osc0_trigger,
             enabled => noise0_sel,
             bitstream => noise0_output
@@ -195,9 +203,9 @@ begin
     NOISE1: entity work.noise_bitstream
         port map (
             clk => clk,
-            trigger_313 => clocks_pulse_div(0),
-            trigger_156 => clocks_pulse_div(1),
-            trigger_76 => clocks_pulse_div(2),
+            trigger_313 => noise_clks(0),
+            trigger_156 => noise_clks(1),
+            trigger_76 => noise_clks(2),
             trigger_osc => osc3_trigger,
             enabled => noise1_sel,
             bitstream => noise1_output
