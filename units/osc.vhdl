@@ -23,6 +23,7 @@ entity osc is
   -- and count-zero trigger output
   port (
     clk: in std_logic;
+    octave_clks: std_logic_vector(7 downto 0);
     sync: in std_logic;
     frequency: in unsigned(7 downto 0);
     octave: in unsigned(2 downto 0);
@@ -33,21 +34,18 @@ entity osc is
 end osc;
 
 architecture behaviour of osc is
-    -- we have an 8-bit counter that operates in two phases
-    -- a primary phase counts up from @frequency to 0 (overflow)
-    -- a secondary phase counts 256 pulses of a (divided) clock i.e. from 0 up to 0 (overflow)
-    -- ctr_phase = '0' means primary phase, ctr_phase = '1' means secondary
-    -- the counter mode toggles between those two phases.
-    signal counter: unsigned(7 downto 0) := (others=>'0');
-    signal ctr_phase: std_logic := '0';
-    signal octave_clks: unsigned(7 downto 0);
+    -- we have a 9-bit counter , initialised with the value of the frequency register
+    -- and counting up until all bits are set
+    signal counter: unsigned(8 downto 0) := (others=>'0');
     signal latched_octave: unsigned(2 downto 0);
     signal latched_freq: unsigned(7 downto 0);
-    signal octave_clk_pulse_diag: std_logic;
 begin
     process(clk)
         variable next_octave_clks: unsigned(7 downto 0);
         variable octave_clk_pulse: std_logic;
+        variable load: std_logic;
+        variable overflow: std_logic;
+        variable next_counter: unsigned(8 downto 0);
     begin
 
         if rising_edge(clk) then
@@ -57,52 +55,44 @@ begin
             -- writing to octave register triggers a copy (latch) of the frequency register
             -- which enables the next period to set the octave and frequency at the same time (no glitch)
             -- setting frequency after that will be ignored until the next half cycle
-            if octave_wr='1' then
+            if octave_wr='1' or sync='1' then
                 latched_freq <= frequency;
             end if;
 
             trigger <= '0'; -- assume not triggered, but clauses below will pulse this as required
 
-            if sync then
-                counter <= "11111111";
-                octave_clks <= "11111111";
-                ctr_phase <= '1';
+            octave_clk_pulse := octave_clks(7-to_integer(latched_octave));
+
+            load := '0';
+            overflow := '0';
+            next_counter := counter + 1;
+            if (octave_clk_pulse='1') and (next_counter="000000000") then
+                -- since this doesn't depend on sync='0', this is what reproduces the "8mhz noise when sync'd" bug (feature?)
+                overflow := '1';
+            end if;
+            trigger <= overflow; -- this is the output that is wired up to noise gen and env gen.  QUESTION does env gen also have an equivalent  "8mhz when sync'd" bug?
+
+            if sync='1' then
+                counter <= "111111111"; -- rearmed so that next tick after sync has been cleared will trigger the overflow condition and flip output and reload the counter
+                --counter <= "0" & latched_freq;
+                load := '1';
+                output <= '0';  -- I'm fairly certain this is true, but need to check test case: FRED space demo.  QUESTION: does output immediately flip to 1 when sync disabled?
+            elsif overflow='1' then
+                -- this marks the end of a (half) wave.  (or sync/reset flag is set)
+                --counter <= "0" & latched_freq;
+                counter <= "0" & latched_freq + 1;
+                output <= not output;
+                -- reload frequency/octave registers now for next half wave because they may have changed
+                load := '1';
+            elsif octave_clk_pulse='1' then
+                counter <= next_counter;
+            end if;
+
+            if load='1' then
                 latched_freq <= frequency;
                 latched_octave <= octave;
-                trigger <= '1';  -- unsure about this.  Is that what we need to correctly reproduce the "8mhz noise when sync'd" bug?  does that bug manifest for env generators too?
-                output <= '1';  -- test case: check FRED space demo
-            else
-
-                next_octave_clks := octave_clks + 1;
-                octave_clks <= next_octave_clks;
-
-                octave_clk_pulse := (not next_octave_clks(7-to_integer(latched_octave))) and octave_clks(7-to_integer(latched_octave));
-                octave_clk_pulse_diag <= octave_clk_pulse;
-
-                if octave_clk_pulse then
-                    if counter = "11111111" then
-                        if ctr_phase = '0' then
-                            -- primary phase complete, do secondary phase
-                            counter <= "00000000";
-                            ctr_phase <= '1';
-                        else
-                            -- done secondary phase, switch back to primary phase, counting up from frequency register
-                            -- this marks the end of a (half) wave.
-                            -- reload frequency/octave registers now for next half wave because they may have changed
-                            counter <= latched_freq;
-                            ctr_phase <= '0';
-                            trigger <= '1';  -- generate pulse on overflow, as required for env generator and noise generator
-
-                            output <= not output;  -- toggle output bit
-                            latched_freq <= frequency;
-                            latched_octave <= octave;
-                            octave_clks <= "00000000";  -- always reset octave clks here, because we (may have) changed octave
-                        end if;
-                    else
-                        counter <= counter + 1;
-                    end if;
-                end if;
             end if;
+        
         end if;
 
     end process;

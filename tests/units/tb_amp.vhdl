@@ -31,7 +31,6 @@ architecture behav of tb_amp is
         amplitude_level: in unsigned(3 downto 0);
         envelope_level: in unsigned(3 downto 0);
         envelope_enabled: in std_logic;
-        frequency_enabled: in std_logic;
         chop_mask: out std_logic
     );
   end component;
@@ -42,12 +41,11 @@ architecture behav of tb_amp is
     signal amplitude_level: unsigned(3 downto 0);
     signal envelope_level: unsigned(3 downto 0);
     signal envelope_enabled: std_logic;
-    signal frequency_enabled: std_logic;
     signal chop_mask: std_logic;
     signal expected_amp, expected_env: std_logic_vector(63 downto 0);
 begin
   --  Component instantiation.
-  amp_0: amp port map (step_counter => step_counter, amplitude_level => amplitude_level, envelope_level => envelope_level, envelope_enabled => envelope_enabled, frequency_enabled => frequency_enabled, chop_mask => chop_mask);
+  amp_0: amp port map (step_counter => step_counter, amplitude_level => amplitude_level, envelope_level => envelope_level, envelope_enabled => envelope_enabled, chop_mask => chop_mask);
 
   --  This process does the real job.
   process
@@ -93,27 +91,8 @@ begin
     );
   begin
 
-    --  Check behaviour with everything disabled
-    envelope_enabled <= '0';
-    frequency_enabled <= '0';
-    for i in amp_seqs'range loop
-        for j in env_seqs'range loop
-        --  Set the inputs.
-            for s in 0 to 63 loop
-                amplitude_level <= to_unsigned(i, 4);
-                envelope_level <= to_unsigned(j, 4);
-                step_counter <= to_unsigned(s, 6);
-
-                --  Check the outputs.
-                wait for 1 ns;
-                assert chop_mask = '1';
-            end loop;
-        end loop;
-    end loop;
-
     -- amplitude behaviour - standalone (freq enabled, env disabled)
     envelope_enabled <= '0';
-    frequency_enabled <= '1';
     for i in amp_seqs'range loop
         for j in env_seqs'range loop
         --  Set the inputs.
@@ -137,7 +116,6 @@ begin
 
     -- envelope behaviour - standalone (freq disabled, env enabled)
     envelope_enabled <= '1';
-    frequency_enabled <= '0';
     for i in amp_seqs'range loop
         for j in env_seqs'range loop
         --  Set the inputs.
@@ -160,7 +138,6 @@ begin
 
     -- envelope and amplitude behaviour - combined (freq enabled, env enabled)
     envelope_enabled <= '1';
-    frequency_enabled <= '1';
     for i in amp_seqs'range loop
         for j in env_seqs'range loop
         --  Set the inputs.

@@ -27,7 +27,8 @@ entity clocks is
   port (
     clk: in std_logic;
     step_ctr: out unsigned(5 downto 0);
-    pulse_div: out std_logic_vector(2 downto 0)
+    octave_clks: out std_logic_vector(7 downto 0);
+    noise_clks: out std_logic_vector(2 downto 0)
     );
 end clocks;
 
@@ -36,14 +37,18 @@ architecture behaviour of clocks is
 begin
     process(clk)
         variable next_clk_div: unsigned(9 downto 0);
+        variable pulse_divs: std_logic_vector(9 downto 0);
     begin
     if rising_edge(clk) then
-        -- question: which clocks (if any) still tick when SYNC bit is set? I may need to connect to SYNC bit here.
-        -- question: are all these clocks shared across all the oscs and noise generators, or do they have their own counters?
-        --           (I assume all shared to reduce silicon, but should be a test case with chip to confirm)
-        -- question: is it valid to just send out the clocks as pulses, rather than square waves?  It seems to simplify things.
+        -- interpretation of experimentals observations:
+        --   all clocks still tick when SYNC bit is set.
+        --   all clocks are shared across all the oscs and noise generators
+        --   the consumers of the clocks just need the pulses (edge), rather than square waves
+        -- These simplifications all make sense in terms of reducing silicon on the real device
         next_clk_div := clk_div + 1;
-        pulse_div <= (std_logic_vector(clk_div(9 downto 7)) AND NOT std_logic_vector(next_clk_div(9 downto 7)));
+        pulse_divs := (std_logic_vector(clk_div(9 downto 0)) AND NOT std_logic_vector(next_clk_div(9 downto 0)));
+        noise_clks <= pulse_divs(9 downto 7);
+        octave_clks <= pulse_divs(7 downto 0);
         step_ctr <= next_clk_div(5 downto 0);
         clk_div <= next_clk_div;
     end if;
