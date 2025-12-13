@@ -24,8 +24,9 @@ entity amp is
     -- well documented in docs section.
     -- question: does every channel use the same masking patterns?  in other words, are the channels masking patterns synchronised
     --           to the same step counter, or could they be offset/flipped for different channels?
-    --           test case: try enabling multiple channels with synchronised osc and changing osc levels
-    --           test case: try setting 'DAC' mode (env enabled, osc mixer disabled) and changing osc levels AND env leves
+    --           [CONFIRMED: YES]
+    --           test case: try enabling multiple channels with synchronised osc and changing amplitude levels
+    --           test case: try setting 'DAC' mode (env enabled, osc mixer disabled) and changing amplitude levels AND env levels
     port(
         step_ctr: in unsigned(5 downto 0);
         amplitude_level: in unsigned(3 downto 0);

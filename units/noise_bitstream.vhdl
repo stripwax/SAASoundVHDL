@@ -39,7 +39,7 @@ entity noise_bitstream is
 end noise_bitstream;
 
 architecture behaviour of noise_bitstream is
-signal lsfr: std_logic_vector(17 downto 0) := "000000000000000001";  -- need power-on initialisation  -- question, are BOTH noise generators initialised identically?
+signal lsfr: std_logic_vector(17 downto 0) := "000000000000000001";  -- need power-on initialisation  -- question, are BOTH noise generators initialised identically?  [Confirmed: YES]
 begin
     process(clk)
 
