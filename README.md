@@ -30,7 +30,8 @@ My desire (with this project) is to convert this into an equivalent gate-level i
 * MAME (at least last time I looked) had very poor incomplete emulations of SAA1099 e.g. did not even implement correctly the "envelope appear at output" ('DAC mode')
 * This thread : https://www.worldofsam.org/forum/2018-08-09/1082 includes a number of discussions of experimental discrepancies detected in different emulation as compared to real hardware (notably based around SimCoupé i.e. my SAASound library but also references to MIST/MISTer)
 * SAAEmu http://www.keprt.cz/sam/saa/ - based on an old version of my SAA1099 so does not include most of the logic fixes added over the years
-  
+* SAA1099Tracker (https://saa1099tracker.borik.net/ and https://github.com/mborik/SAA1099Tracker) which uses a reworked version (in JavaScript) of my SAASound code for its core engine, but an older version of it.
+
 # Other hardware implementations:
 * Some discussion about SAA1099 module in Next core from 2021: https://www.worldofsam.org/forum/2021-05-18/1973#comment-990  (and demo here https://www.youtube.com/watch?v=SQW9XDvAI5Y )  .  What core/vhdl is this actually using??
 * Of course, also discussion + speculation about SAA1099 module in the upcoming SAM Coupé core in Next KS3 due ~ Dec 2025
