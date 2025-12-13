@@ -34,5 +34,5 @@ My desire (with this project) is to convert this into an equivalent gate-level i
 
 # Other hardware implementations:
 * Some discussion about SAA1099 module in Next core from 2021: https://www.worldofsam.org/forum/2021-05-18/1973#comment-990  (and demo here https://www.youtube.com/watch?v=SQW9XDvAI5Y )  .  What core/vhdl is this actually using??
-* Of course, also discussion + speculation about SAA1099 module in the upcoming SAM Coupé core in Next KS3 due ~ Dec 2025
+* Of course, also discussion + speculation about SAA1099 module in the upcoming SAM Coupé core in Next KS3 due ~ Feb 2026?
 * 
