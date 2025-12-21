@@ -70,7 +70,7 @@ begin
                 -- since this doesn't depend on sync='0', this is what reproduces the "8mhz noise when sync'd" bug (feature?)
                 overflow := '1';
             end if;
-            trigger <= overflow; -- this is the output that is wired up to noise gen and env gen.  QUESTION does env gen also have an equivalent  "8mhz when sync'd" bug?
+            trigger <= overflow; -- this is the output that is wired up to noise gen and env gen.  QUESTION does env gen also have an equivalent  "8mhz when sync'd" bug?  ANSWER yes, and what an excellent discovery!
 
             if sync='1' then
                 counter <= "111111111"; -- rearmed so that next tick after sync has been cleared will trigger the overflow condition and flip output and reload the counter
