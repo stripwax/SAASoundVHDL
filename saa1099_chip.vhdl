@@ -85,13 +85,13 @@ architecture behaviour of saa1099_digital_output is
     signal osc1_output: std_logic;
     signal osc1_trigger: std_logic;
     signal osc2_output: std_logic;
-    signal osc2_trigger: std_logic;
+    signal osc2_trigger: std_logic;  -- unused
     signal osc3_output: std_logic;
     signal osc3_trigger: std_logic;
     signal osc4_output: std_logic;
     signal osc4_trigger: std_logic;
     signal osc5_output: std_logic;
-    signal osc5_trigger: std_logic;
+    signal osc5_trigger: std_logic;  -- unused
 
     signal oct01_wr, oct23_wr, oct45_wr: std_logic;
 
@@ -99,9 +99,14 @@ architecture behaviour of saa1099_digital_output is
     signal noise_clks : std_logic_vector(2 downto 0);
     signal octave_clks : std_logic_vector(7 downto 0);
     signal amp0l_out, amp0r_out, amp1l_out, amp1r_out, amp2l_out, amp2r_out, amp3l_out, amp3r_out, amp4l_out, amp4r_out, amp5l_out, amp5r_out : std_logic;
-    signal env0l_out, env0r_out, env1l_out, env1r_out : std_logic;
+    signal env0_wr, env1_wr : std_logic;
+    signal env0l_level_out, env0r_level_out, env1l_level_out, env1r_level_out : unsigned(3 downto 0);
+    signal env0l_chop_out, env0r_chop_out, env1l_chop_out, env1r_chop_out : std_logic;
     signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
     signal step_ctr : unsigned(5 downto 0);
+
+    -- edge detection:
+    signal wr_n_prev : std_logic;
 
     -- debugging:
     signal outl_sum : unsigned(2 downto 0);
@@ -332,42 +337,89 @@ begin
             output_r => amp5r_out
         );
 
-    env0l_out <= amp2l_out;  -- temp bodge
-    env0r_out <= amp2r_out;  -- temp bodge
-    env1l_out <= amp5l_out;  -- temp bodge
-    env1r_out <= amp5r_out;  -- temp bodge
-
-    outl(0) <= amp0l_out and enable;
-    outl(1) <= amp1l_out and enable;
-    outl(2) <= env0l_out and enable;
-    outl(3) <= amp3l_out and enable;
-    outl(4) <= amp4l_out and enable;
-    outl(5) <= env1l_out and enable;
-    outr(0) <= amp0r_out and enable;
-    outr(1) <= amp1r_out and enable;
-    outr(2) <= env0r_out and enable;
-    outr(3) <= amp3r_out and enable;
-    outr(4) <= amp4r_out and enable;
-    outr(5) <= env1r_out and enable;
-
-    outl_sum <= unsigned("00" & outl(0 downto 0)) + unsigned("00" & outl(1 downto 1)) + unsigned("00" & outl(2 downto 2)) + unsigned("00" & outl(3 downto 3)) + unsigned("00" & outl(4 downto 4)) + unsigned("00" & outl(5 downto 5));
-    outr_sum <= unsigned("00" & outr(0 downto 0)) + unsigned("00" & outr(1 downto 1)) + unsigned("00" & outr(2 downto 2)) + unsigned("00" & outr(3 downto 3)) + unsigned("00" & outr(4 downto 4)) + unsigned("00" & outr(5 downto 5));
-
-/*
     ENV0 : entity work.env
         port map (
-        
+            clk => clk,
+            env_write => env0_wr,
+            env_lr => env0_lr,
+            env_wave => env0_wave,
+            env_res => env0_res,
+            env_clk_source => env0_clk_source,
+            env_en => env0_en,
+            osc_pulse => osc1_trigger,
+            a0_pulse => a0_pulse,
+            output_left => env0l_level_out,
+            output_right => env0r_level_out
+        );
+
+    ENV_CHOP0 : entity work.env_chop
+        port map (
+            step_ctr => step_ctr,
+            envelope_enabled => env0_en,
+            input_l => amp2l_out,
+            input_r => amp2r_out,
+            env_l => env0l_level_out,
+            env_r => env0r_level_out,
+            output_l => env0l_chop_out,
+            output_r => env0r_chop_out
         );
 
     ENV1 : entity work.env
         port map (
-        
+            clk => clk,
+            env_write => env1_wr,
+            env_lr => env1_lr,
+            env_wave => env1_wave,
+            env_res => env1_res,
+            env_clk_source => env1_clk_source,
+            env_en => env1_en,
+            osc_pulse => osc4_trigger,
+            a0_pulse => a0_pulse,
+            output_left => env1l_level_out,
+            output_right => env1r_level_out
         );
-*/
+
+    ENV_CHOP1 : entity work.env_chop
+        port map (
+            step_ctr => step_ctr,
+            envelope_enabled => env1_en,
+            input_l => amp5l_out,
+            input_r => amp5r_out,
+            env_l => env1l_level_out,
+            env_r => env1r_level_out,
+            output_l => env1l_chop_out,
+            output_r => env1r_chop_out
+        );
+
+    outl(0) <= amp0l_out and enable;
+    outl(1) <= amp1l_out and enable;
+    outl(2) <= env0l_chop_out and enable;
+    outl(3) <= amp3l_out and enable;
+    outl(4) <= amp4l_out and enable;
+    outl(5) <= env1l_chop_out and enable;
+    outr(0) <= amp0r_out and enable;
+    outr(1) <= amp1r_out and enable;
+    outr(2) <= env0r_chop_out and enable;
+    outr(3) <= amp3r_out and enable;
+    outr(4) <= amp4r_out and enable;
+    outr(5) <= env1r_chop_out and enable;
+
+    outl_sum <= unsigned("00" & outl(0 downto 0)) + unsigned("00" & outl(1 downto 1)) + unsigned("00" & outl(2 downto 2)) + unsigned("00" & outl(3 downto 3)) + unsigned("00" & outl(4 downto 4)) + unsigned("00" & outl(5 downto 5));
+    outr_sum <= unsigned("00" & outr(0 downto 0)) + unsigned("00" & outr(1 downto 1)) + unsigned("00" & outr(2 downto 2)) + unsigned("00" & outr(3 downto 3)) + unsigned("00" & outr(4 downto 4)) + unsigned("00" & outr(5 downto 5));
+
     process (clk)
+        variable wr_edge : std_logic;
     begin
+        -- write cycle completes when wr is deasserted, and the clock in which this occurs
+        -- is what drives the a0_pulse and/or env[01]_wr
+
         -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
         a0_pulse <= '0';
+
+        -- we need to track if envelope registers were written to, since this is a trigger for the env gen
+        -- to reset waveform (see datasheet re position "3") as well as latch incoming new data
+        env0_wr <= '0';
+        env1_wr <= '0';
 
         -- we need to track if octave registers were written to, since this is a trigger for the oscillator
         -- to also capture the freq registers at the same time
@@ -376,15 +428,18 @@ begin
         oct45_wr <= '0';
 
         if rising_edge(clk) then
-            if wr_n='0' and cs_n='0' then
+
+            -- detect rising edge on wr
+            wr_edge := (wr_n and not wr_n_prev);
+            wr_n_prev <= wr_n;
+
+            if wr_edge and not cs_n then
 
                 if a0='1' then
                     -- a0 is high (i.e. register write)
                     reg <= d(4 downto 0); -- higher bits unused; register file repeats according to datasheet
-                    if a0_pulse='0' then
-                        -- set a0_pulse for one cycle (triggers for env if configured that way)
-                        a0_pulse <= '1';
-                    end if;
+                    -- set a0_pulse for one cycle (triggers for env if configured that way)
+                    a0_pulse <= '1';
 
                 else
                     if reg(4 downto 3) = "00" then
@@ -460,12 +515,14 @@ begin
                         env0_res <= d(4);
                         env0_clk_source <= d(5);
                         env0_en <= d(7);
+                        env0_wr <= '1';
                     elsif reg(4 downto 0) = "11001" then
                         env1_lr <= d(0);
                         env1_wave(2 downto 0) <= d(3 downto 1);
                         env1_res <= d(4);
                         env1_clk_source <= d(5);
                         env1_en <= d(7);
+                        env1_wr <= '1';
                     elsif reg(4 downto 0) = "11100" then
                         enable <= d(0);
                         sync_rst <= d(1);

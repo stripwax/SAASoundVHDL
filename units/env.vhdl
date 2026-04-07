@@ -45,6 +45,8 @@
 -- counter always reset to 15 as soon as ctr==0 regardless of 4-bit/3-bit mode?
 -- how to test this edge case?
 
+-- also: when inverting right hand side, what happens in 3-bit mode?  (is 0 flipped to 14 or 15? presumably 14 right?)
+
 
 -- EN3, EN2, EN1:     [EN0 => right inverse]
 -- 000 = constant zero, halt    =>  counter_output = 0, invert_output = 0, halt_or_repeat = 0, invert_flip = 0
@@ -65,90 +67,99 @@ entity env is
     port(
         clk : in std_logic;
         env_write : in std_logic;
-        a0_write : in std_logic;
-
         env_lr : in std_logic;
         env_wave : std_logic_vector(2 downto 0);
         env_res : std_logic;
         env_clk_source : std_logic;
         env_en : std_logic;
+        osc_pulse: in std_logic;
+        a0_pulse : in std_logic;
 
-        osc_trigger: in std_logic;
         output_left, output_right : out unsigned(3 downto 0)
     );
 end env;
 
 architecture behaviour of env is
 
-    signal counter: std_logic_vector(3 downto 0) := "1111";
+    signal counter: unsigned(3 downto 0);
     signal new_env_waiting : std_logic;
     signal env_lr_buffered, env_clk_source_buffered : std_logic;
     signal env_wave_buffer : std_logic_vector(2 downto 0);
-    signal counter_output, invert_output, halt_or_reset, invert_flip : std_logic;
+    signal counter_output, halted, inverted, halt_or_repeat, invert_flip : std_logic;
 
 begin
     process(clk)
         variable trigger : std_logic;
-        variable effective_counter : std_logic_vector(3 downto 0);
+        variable effective_counter : unsigned(3 downto 0);
+        variable next_counter : unsigned(3 downto 0);
+        variable intermediate_out : unsigned(3 downto 0);
+        variable calc_output_left : unsigned(3 downto 0);
     begin
 
-        trigger := (a0_write AND env_clk_source='0') OR (osc_trigger AND env_clk_source='1');
+        trigger := (osc_pulse AND not env_clk_source) OR (a0_pulse AND env_clk_source);
 
         if rising_edge(clk) then
 
             if not env_en then
-                counter <= "1111";
+                next_counter := "1111";
+                halted <= '1';
             else
+                -- if env_res='1' then
+                --     -- 4 bit mode
+                --     effective_counter := counter;
+                -- else
+                --     -- 3 bit mode , and lsb is fixed to be zero
+                --     effective_counter := (counter(3 downto 1) & '0');
+                -- end if;
+                effective_counter(3 downto 1) := counter(3 downto 1);
+                effective_counter(0) := counter(0) and env_res;
 
-                if env_res='1' then
-                    -- 4 bit mode
-                    effective_counter := counter;
-                else
-                    -- 3 bit mode , and lsb is fixed to be zero
-                    effective_counter := (counter(3 downto 1) & '0');
+
+                if (halted='1' or effective_counter="0000") and new_env_waiting='1' then
+                    -- process new env instruction here (this corresponds to position(3) or position(4))
+                    halted <= '0';
+                    next_counter := "1111";
+                    -- load new wav defn from env_wav
+                    -- for example:
+                    counter_output <= '1';
+                    inverted <= '1';
+                    halt_or_repeat <= '1';
+                    invert_flip <= '1';
                 end if;
 
-                if effective_counter=0 then
-                    -- process new env instruction here (this corresponds to position(3) or position(4))
-                    if new_env_waiting then
-                    else
-                        if halt_or_repeat='0' and (invert_flip='0' or invert_output='0') then
+                if (halted='0' and trigger='1') then
+                    if counter = "0000" then
+                        if halt_or_repeat='0' and (invert_flip='0' or inverted='0') then
                             halted <= '1';
-                            env_output <= 0;
                         else
-                            counter <= "1111";
-                            if invert_flip then
-                                invert <= 0;
-                            end if;
+                            inverted <= inverted xor invert_flip;
+                        end if;
+                        next_counter := "1111";
+                    else
+                        if env_res='1' then
+                            -- 4 bit mode
+                            next_counter := counter-1;
+                        else
+                            next_counter := counter-2;
                         end if;
                     end if;
-                else
-                    if mode_4bit then
-                        counter <= counter-1;
-                    else
-                        counter <= counter-2;
-                    end if;
-                end if; 
+                   
+                end if;
 
-                if counter_output then
-                    intermediate_out := counter;
+                counter <= next_counter;
+
+                if counter_output and not(halted) then
+                    intermediate_out := effective_counter;
                 else
                     intermediate_out := "0000";
                 end if;
-                if invert then
-                    calc_output_left := counter xor "1111";
-                else
-                    calc_output_left := counter;
-                end if;
 
+                calc_output_left := intermediate_out xor (("111" & env_res) and (inverted & inverted & inverted & inverted));
                 output_left <= calc_output_left;
-                if right_invert then
-                    output_right <= calc_output_left xor "1111";
-                else
-                    output_right <= calc_output_left;
-                end if;
+                output_right <= calc_output_left xor (("111" & env_res) and (env_lr & env_lr & env_lr & env_lr));
             
             end if;
+            
         end if;
 
     end process;

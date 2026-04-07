@@ -23,13 +23,10 @@ entity env_chop is
     -- similar to amplifier chop, this is the chop stage of the env controller
     port(
         step_ctr: in unsigned(5 downto 0);
-        input_l: in std_logic;
-        input_r: in std_logic;
         envelope_enabled: in std_logic;
-        env_l: in unsigned(3 downto 0);
-        env_r: in unsigned(3 downto 0);
-        output_l: out std_logic;
-        output_r: out std_logic
+        input_l, input_r: in std_logic;
+        env_l, env_r: in unsigned(3 downto 0);
+        output_l, output_r: out std_logic
     );
 end entity;
 
