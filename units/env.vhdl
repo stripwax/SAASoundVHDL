@@ -82,9 +82,8 @@ end env;
 architecture behaviour of env is
 
     signal counter: unsigned(3 downto 0);
-    signal new_env_waiting : std_logic;
     signal env_lr_buffered, env_clk_source_buffered : std_logic;
-    signal env_wave_buffer : std_logic_vector(2 downto 0);
+    signal env_wave_buffered : std_logic_vector(2 downto 0);
     signal counter_output, halted, inverted, halt_or_repeat, invert_flip : std_logic;
 
 begin
@@ -94,11 +93,30 @@ begin
         variable next_counter : unsigned(3 downto 0);
         variable intermediate_out : unsigned(3 downto 0);
         variable calc_output_left : unsigned(3 downto 0);
+        variable env_wave_val : std_logic_vector(2 downto 0);
+        variable env_lr_val : std_logic;
+        variable env_clk_source_val : std_logic;
     begin
 
-        trigger := (osc_pulse AND not env_clk_source) OR (a0_pulse AND env_clk_source);
-
         if rising_edge(clk) then
+
+            -- use variables to represent the output of the buffered values OR the input (if env_write is strobed)
+            -- which we can use to then load into the buffer for the next clock and/or program the env gen this clock
+            env_wave_val := env_wave_buffered;
+            env_lr_val := env_lr_buffered;
+            env_clk_source_val := env_clk_source_buffered;
+            if env_write then
+                env_wave_buffered <= env_wave;
+                env_wave_val := env_wave;
+
+                env_lr_buffered <= env_lr;
+                env_lr_val := env_lr;
+
+                env_clk_source_buffered <= env_clk_source;
+                env_clk_source_val := env_clk_source;
+            end if;
+
+            trigger := (osc_pulse AND not env_clk_source_val) OR (a0_pulse AND env_clk_source_val);
 
             if not env_en then
                 next_counter := "1111";
@@ -115,16 +133,15 @@ begin
                 effective_counter(0) := counter(0) and env_res;
 
 
-                if (halted='1' or effective_counter="0000") and new_env_waiting='1' then
+                if (halted='1' or effective_counter="0000") then
                     -- process new env instruction here (this corresponds to position(3) or position(4))
                     halted <= '0';
                     next_counter := "1111";
-                    -- load new wav defn from env_wav
-                    -- for example:
-                    counter_output <= '1';
-                    inverted <= '1';
-                    halt_or_repeat <= '1';
-                    invert_flip <= '1';
+                    -- load new wav defn from env_wav:
+                    counter_output <= '1' when env_wave_val(2 downto 1)="00" else '0';
+                    inverted <= '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2)='1' else '0';
+                    halt_or_repeat <= env_wave_val(0);
+                    invert_flip <= '1' when env_wave_val(2 downto 1)="10" else '0';
                 end if;
 
                 if (halted='0' and trigger='1') then
@@ -156,7 +173,7 @@ begin
 
                 calc_output_left := intermediate_out xor (("111" & env_res) and (inverted & inverted & inverted & inverted));
                 output_left <= calc_output_left;
-                output_right <= calc_output_left xor (("111" & env_res) and (env_lr & env_lr & env_lr & env_lr));
+                output_right <= calc_output_left xor (("111" & env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             
             end if;
             
