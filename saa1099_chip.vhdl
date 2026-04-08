@@ -106,7 +106,7 @@ architecture behaviour of saa1099_digital_output is
     signal step_ctr : unsigned(5 downto 0);
 
     -- edge detection:
-    signal wr_n_prev : std_logic;
+    signal wr_n_prev, cs_n_prev : std_logic;
 
     -- debugging:
     signal outl_sum : unsigned(2 downto 0);
@@ -429,11 +429,12 @@ begin
 
         if rising_edge(clk) then
 
-            -- detect rising edge on wr
-            wr_edge := (wr_n and not wr_n_prev);
+            -- detect rising edge on wr (with cs still asserted) and/or cs (with wr still asserted)
+            wr_edge := (wr_n and not wr_n_prev) or (cs_n and not cs_n_prev);
             wr_n_prev <= wr_n;
+            cs_n_prev <= cs_n;
 
-            if wr_edge and not cs_n then
+            if wr_edge then
 
                 if a0='1' then
                     -- a0 is high (i.e. register write)
