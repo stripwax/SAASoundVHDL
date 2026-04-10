@@ -41,7 +41,6 @@ architecture behaviour of osc is
     signal latched_freq: unsigned(7 downto 0);
 begin
     process(clk)
-        variable next_octave_clks: unsigned(7 downto 0);
         variable octave_clk_pulse: std_logic;
         variable load: std_logic;
         variable overflow: std_logic;
