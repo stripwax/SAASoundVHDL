@@ -36,7 +36,7 @@
 -- invert_output = 0(output = counter_output) or 1(output = !counter_output)
 -- invert_flip = 0(single-cycle) or 1(double-cycle i.e. triangle)
 -- 'end_cycle' = ctr==0 AND (invert_flip==FALSE or INVERT=TRUE)
--- halt_or_repeat = 0(halt after end_cycle) or 1(repeat after end_cycle)
+-- wav_repeat = 0(halt after end_cycle) or 1(repeat after end_cycle)
 
 -- counter counts down by 1 or 2 .  if counter is counting down by 2 then we take lsb to be zero for the 'ctr==0' checks
 
@@ -49,14 +49,16 @@
 
 
 -- EN3, EN2, EN1:     [EN0 => right inverse]
--- 000 = constant zero, halt    =>  counter_output = 0, invert_output = 0, halt_or_repeat = 0, invert_flip = 0
--- 001 = constant high, repeat  =>  counter_output = 0, invert_output = 1, halt_or_repeat = 1, invert_flip = 0
--- 010 = saw down, halt         =>  counter_output = 1, invert_output = 0, halt_or_repeat = 0, invert_flip = 0
--- 011 = saw down, repeat       =>  counter_output = 1, invert_output = 0, halt_or_repeat = 1, invert_flip = 0
--- 100 = triangle, halt         =>  counter_output = 1, invert_output = 1, halt_or_repeat = 0, invert_flip = 1
--- 101 = triangle, repeat       =>  counter_output = 1, invert_output = 1, halt_or_repeat = 1, invert_flip = 1
--- 110 = saw up, halt           =>  counter_output = 1, invert_output = 1, halt_or_repeat = 0, invert_flip = 0
--- 111 = saw up, repeat         =>  counter_output = 1, invert_output = 1, halt_or_repeat = 1, invert_flip = 0
+-- 000 = constant zero, halt    =>  counter_output = 0, invert_output = 0, wav_repeat = 0, invert_flip = 0
+-- 001 = constant high, repeat  =>  counter_output = 0, invert_output = 1, wav_repeat = 1, invert_flip = 0
+-- 010 = saw down, halt         =>  counter_output = 1, invert_output = 0, wav_repeat = 0, invert_flip = 0
+-- 011 = saw down, repeat       =>  counter_output = 1, invert_output = 0, wav_repeat = 1, invert_flip = 0
+-- 100 = triangle, halt         =>  counter_output = 1, invert_output = 1, wav_repeat = 0, invert_flip = 1
+-- 101 = triangle, repeat       =>  counter_output = 1, invert_output = 1, wav_repeat = 1, invert_flip = 1
+-- 110 = saw up, halt           =>  counter_output = 1, invert_output = 1, wav_repeat = 0, invert_flip = 0
+-- 111 = saw up, repeat         =>  counter_output = 1, invert_output = 1, wav_repeat = 1, invert_flip = 0
+
+-- actually you can just do invert flip and associated logic using a 5-bit counter instead, the MSB is the flag to say when to invert.
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -81,21 +83,27 @@ end env;
 
 architecture behaviour of env is
 
-    signal counter: unsigned(3 downto 0);
+    signal counter: unsigned(4 downto 0);
     signal env_lr_buffered, env_clk_source_buffered : std_logic;
     signal env_wave_buffered : std_logic_vector(2 downto 0);
-    signal counter_output, halted, inverted, halt_or_repeat, invert_flip : std_logic;
+    signal counter_output, halted, inverted, wav_repeat : std_logic;
+
+    signal debug_env_wave_val : std_logic_vector(2 downto 0);
+    signal debug_env_lr_val, debug_env_clk_source_val : std_logic;
 
 begin
     process(clk)
         variable trigger : std_logic;
-        variable effective_counter : unsigned(3 downto 0);
-        variable next_counter : unsigned(3 downto 0);
+        variable effective_counter : unsigned(4 downto 0);
+        variable next_counter : unsigned(4 downto 0);
         variable intermediate_out : unsigned(3 downto 0);
         variable calc_output_left : unsigned(3 downto 0);
         variable env_wave_val : std_logic_vector(2 downto 0);
         variable env_lr_val : std_logic;
         variable env_clk_source_val : std_logic;
+        variable halted_val : std_logic;
+        variable invert_flip : std_logic;
+        variable ctr_zero : std_logic;
     begin
 
         if rising_edge(clk) then
@@ -105,6 +113,7 @@ begin
             env_wave_val := env_wave_buffered;
             env_lr_val := env_lr_buffered;
             env_clk_source_val := env_clk_source_buffered;
+            halted_val := halted;
             if env_write then
                 env_wave_buffered <= env_wave;
                 env_wave_val := env_wave;
@@ -114,69 +123,51 @@ begin
 
                 env_clk_source_buffered <= env_clk_source;
                 env_clk_source_val := env_clk_source;
+
+                halted_val := not env_en;
             end if;
+
+            debug_env_clk_source_val <= env_clk_source_val;
+            debug_env_lr_val <= env_lr_val;
+            debug_env_wave_val <= env_wave_val;
 
             trigger := (osc_pulse AND not env_clk_source_val) OR (a0_pulse AND env_clk_source_val);
-
-            if not env_en then
-                next_counter := "1111";
-                halted <= '1';
-            else
-                -- if env_res='1' then
-                --     -- 4 bit mode
-                --     effective_counter := counter;
-                -- else
-                --     -- 3 bit mode , and lsb is fixed to be zero
-                --     effective_counter := (counter(3 downto 1) & '0');
-                -- end if;
-                effective_counter(3 downto 1) := counter(3 downto 1);
-                effective_counter(0) := counter(0) and env_res;
-
-
-                if (halted='1' or effective_counter="0000") then
-                    -- process new env instruction here (this corresponds to position(3) or position(4))
-                    halted <= '0';
-                    next_counter := "1111";
-                    -- load new wav defn from env_wav:
-                    counter_output <= '1' when env_wave_val(2 downto 1)="00" else '0';
-                    inverted <= '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2)='1' else '0';
-                    halt_or_repeat <= env_wave_val(0);
-                    invert_flip <= '1' when env_wave_val(2 downto 1)="10" else '0';
-                end if;
-
-                if (halted='0' and trigger='1') then
-                    if counter = "0000" then
-                        if halt_or_repeat='0' and (invert_flip='0' or inverted='0') then
-                            halted <= '1';
-                        else
-                            inverted <= inverted xor invert_flip;
-                        end if;
-                        next_counter := "1111";
-                    else
-                        if env_res='1' then
-                            -- 4 bit mode
-                            next_counter := counter-1;
-                        else
-                            next_counter := counter-2;
-                        end if;
-                    end if;
-                   
-                end if;
-
-                counter <= next_counter;
-
-                if counter_output and not(halted) then
-                    intermediate_out := effective_counter;
+            effective_counter := (counter(4 downto 1)) & (counter(0) and not env_res);
+            ctr_zero := '1' when effective_counter="00000" else '0';
+            if (not halted and not env_write) and ctr_zero and not wav_repeat then
+                -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
+                halted_val := '1';
+            elsif ((halted and env_write) or (ctr_zero  and wav_repeat)) then
+                -- process new env instruction here (this corresponds to position(3) or position(4))
+                -- load new wav defn from env_wav:
+                counter_output <= '0' when env_wave_val(2 downto 1)="00" else '1';
+                inverted <= '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2)='1' else '0';
+                wav_repeat <= env_wave_val(0);
+                invert_flip := '1' when env_wave_val(2 downto 1)="10" else '0';
+                next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
+            elsif (halted_val='0' and trigger='1') then
+                if env_res='0' then
+                    -- 4 bit mode
+                    next_counter := counter-1;
                 else
-                    intermediate_out := "0000";
+                    next_counter := counter-2;  -- based on my understanding that LSB is still actually preserved when the resolution is changed from 4 to 3 bits (easily confirmed by changing resolution back to 4 bits, in the SAME env wave cycle, there's a SAA test case for that in the .dsk)
                 end if;
-
-                calc_output_left := intermediate_out xor (("111" & env_res) and (inverted & inverted & inverted & inverted));
-                output_left <= calc_output_left;
-                output_right <= calc_output_left xor (("111" & env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
-            
+                
             end if;
+
+            if counter_output and not(halted_val) then
+                intermediate_out := effective_counter(3 downto 0);
+            else
+                intermediate_out := "0000";
+            end if;
+
+            calc_output_left := intermediate_out xor (("111" & not env_res) and (inverted & inverted & inverted & inverted));
+            output_left <= calc_output_left;
+            output_right <= calc_output_left xor (("111" & not env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             
+            counter <= next_counter;
+            halted <= halted_val;
+
         end if;
 
     end process;
