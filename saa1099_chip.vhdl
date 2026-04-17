@@ -93,13 +93,13 @@ architecture behaviour of saa1099_digital_output is
     signal osc5_output: std_logic;
     signal osc5_trigger: std_logic;  -- unused
 
-    signal oct01_wr, oct23_wr, oct45_wr: std_logic;
+    signal oct01_wr_pulse, oct23_wr_pulse, oct45_wr_pulse: std_logic;
 
     signal noise0_output, noise1_output : std_logic;
     signal noise_clks : std_logic_vector(2 downto 0);
     signal octave_clks : std_logic_vector(7 downto 0);
     signal amp0l_out, amp0r_out, amp1l_out, amp1r_out, amp2l_out, amp2r_out, amp3l_out, amp3r_out, amp4l_out, amp4r_out, amp5l_out, amp5r_out : std_logic;
-    signal env0_wr, env1_wr : std_logic;
+    signal env0_wr_pulse, env1_wr_pulse : std_logic;
     signal env0l_level_out, env0r_level_out, env1l_level_out, env1r_level_out : unsigned(3 downto 0);
     signal env0l_chop_out, env0r_chop_out, env1l_chop_out, env1r_chop_out : std_logic;
     signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
@@ -129,7 +129,7 @@ begin
             sync => sync_rst,
             frequency => unsigned(freq0),
             octave => unsigned(oct0),
-            octave_wr => oct01_wr,
+            octave_wr => oct01_wr_pulse,
             output => osc0_output,
             trigger => osc0_trigger
         );
@@ -141,7 +141,7 @@ begin
             sync => sync_rst,
             frequency => unsigned(freq1),
             octave => unsigned(oct1),
-            octave_wr => oct01_wr,
+            octave_wr => oct01_wr_pulse,
             output => osc1_output,
             trigger => osc1_trigger
         );
@@ -153,7 +153,7 @@ begin
             sync => sync_rst,
             frequency => unsigned(freq2),
             octave => unsigned(oct2),
-            octave_wr => oct23_wr,
+            octave_wr => oct23_wr_pulse,
             output => osc2_output,
             trigger => osc2_trigger
         );
@@ -165,7 +165,7 @@ begin
             sync => sync_rst,
             frequency => unsigned(freq3),
             octave => unsigned(oct3),
-            octave_wr => oct23_wr,
+            octave_wr => oct23_wr_pulse,
             output => osc3_output,
             trigger => osc3_trigger
         );
@@ -177,7 +177,7 @@ begin
             sync => sync_rst,
             frequency => unsigned(freq4),
             octave => unsigned(oct4),
-            octave_wr => oct45_wr,
+            octave_wr => oct45_wr_pulse,
             output => osc4_output,
             trigger => osc4_trigger
         );
@@ -189,7 +189,7 @@ begin
             sync => sync_rst,
             frequency => unsigned(freq5),
             octave => unsigned(oct5),
-            octave_wr => oct45_wr,
+            octave_wr => oct45_wr_pulse,
             output => osc5_output,
             trigger => osc5_trigger
         );
@@ -340,7 +340,7 @@ begin
     ENV0 : entity work.env
         port map (
             clk => clk,
-            env_write => env0_wr,
+            env_write => env0_wr_pulse,
             env_lr => env0_lr,
             env_wave => env0_wave,
             env_res => env0_res,
@@ -367,7 +367,7 @@ begin
     ENV1 : entity work.env
         port map (
             clk => clk,
-            env_write => env1_wr,
+            env_write => env1_wr_pulse,
             env_lr => env1_lr,
             env_wave => env1_wave,
             env_res => env1_res,
@@ -410,24 +410,24 @@ begin
     process (clk)
         variable wr_edge : std_logic;
     begin
-        -- write cycle completes when wr is deasserted, and the clock in which this occurs
-        -- is what drives the a0_pulse and/or env[01]_wr
-
-        -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
-        a0_pulse <= '0';
-
-        -- we need to track if envelope registers were written to, since this is a trigger for the env gen
-        -- to reset waveform (see datasheet re position "3") as well as latch incoming new data
-        env0_wr <= '0';
-        env1_wr <= '0';
-
-        -- we need to track if octave registers were written to, since this is a trigger for the oscillator
-        -- to also capture the freq registers at the same time
-        oct01_wr <= '0';
-        oct23_wr <= '0';
-        oct45_wr <= '0';
-
         if rising_edge(clk) then
+
+            -- write cycle completes when wr is deasserted, and the clock in which this occurs
+            -- is what drives the a0_pulse and/or env[01]_wr
+
+            -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
+            a0_pulse <= '0';
+
+            -- we need to track if envelope registers were written to, since this is a trigger for the env gen
+            -- to reset waveform (see datasheet re position "3") as well as latch incoming new data
+            env0_wr_pulse <= '0';
+            env1_wr_pulse <= '0';
+
+            -- we need to track if octave registers were written to, since this is a trigger for the oscillator
+            -- to also capture the freq registers at the same time
+            oct01_wr_pulse <= '0';
+            oct23_wr_pulse <= '0';
+            oct45_wr_pulse <= '0';
 
             -- detect rising edge on wr (with cs still asserted) and/or cs (with wr still asserted)
             wr_edge := (wr_n and not wr_n_prev) or (cs_n and not cs_n_prev);
@@ -482,17 +482,17 @@ begin
                         -- oct0 and 1 register
                         oct0(2 downto 0) <= d(2 downto 0);
                         oct1(2 downto 0) <= d(6 downto 4);
-                        oct01_wr <= '1';
+                        oct01_wr_pulse <= '1';
                     elsif reg(4 downto 0) = "10001" then
                         -- oct2 and 3 register
                         oct2(2 downto 0) <= d(2 downto 0);
                         oct3(2 downto 0) <= d(6 downto 4);
-                        oct23_wr <= '1';
+                        oct23_wr_pulse <= '1';
                     elsif reg(4 downto 0) = "10010" then
                         -- oct4 and 5 register
                         oct4(2 downto 0) <= d(2 downto 0);
                         oct5(2 downto 0) <= d(6 downto 4);
-                        oct45_wr <= '1';
+                        oct45_wr_pulse <= '1';
                     elsif reg(4 downto 0) = "10100" then
                         freq0_en <= d(0);
                         freq1_en <= d(1);
@@ -516,14 +516,14 @@ begin
                         env0_res <= d(4);
                         env0_clk_source <= d(5);
                         env0_en <= d(7);
-                        env0_wr <= '1';
+                        env0_wr_pulse <= '1';
                     elsif reg(4 downto 0) = "11001" then
                         env1_lr <= d(0);
                         env1_wave(2 downto 0) <= d(3 downto 1);
                         env1_res <= d(4);
                         env1_clk_source <= d(5);
                         env1_en <= d(7);
-                        env1_wr <= '1';
+                        env1_wr_pulse <= '1';
                     elsif reg(4 downto 0) = "11100" then
                         enable <= d(0);
                         sync_rst <= d(1);
