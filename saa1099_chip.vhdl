@@ -69,12 +69,12 @@ architecture behaviour of saa1099_digital_output is
     signal env0_wave : std_logic_vector(2 downto 0);
     signal env0_res : std_logic;
     signal env0_clk_source : std_logic;
-    signal env0_en : std_logic;
+    signal env0_en : std_logic := '0';
     signal env1_lr : std_logic;
     signal env1_wave : std_logic_vector(2 downto 0);
     signal env1_res : std_logic;
     signal env1_clk_source : std_logic;
-    signal env1_en : std_logic;
+    signal env1_en : std_logic := '0';
     signal sync_rst : std_logic;
     signal enable : std_logic := '0';
 

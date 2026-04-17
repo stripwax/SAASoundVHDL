@@ -83,13 +83,11 @@ end env;
 
 architecture behaviour of env is
 
-    signal counter: unsigned(4 downto 0);
-    signal env_lr_buffered, env_clk_source_buffered : std_logic;
-    signal env_wave_buffered : std_logic_vector(2 downto 0);
-    signal counter_output, halted, inverted, wav_repeat : std_logic;
-
-    signal debug_env_wave_val : std_logic_vector(2 downto 0);
-    signal debug_env_lr_val, debug_env_clk_source_val : std_logic;
+    signal counter: unsigned(4 downto 0) := (others=>'0');  -- only initialise to stop noise in simulation
+    signal env_lr_buffered, env_clk_source_buffered : std_logic := '0';
+    signal env_wave_buffered : std_logic_vector(2 downto 0) := "000";
+    signal counter_output, inverted, wav_repeat : std_logic := '0';
+    signal halted : std_logic := '1';
 
 begin
     process(clk)
@@ -127,17 +125,13 @@ begin
                 halted_val := not env_en;
             end if;
 
-            debug_env_clk_source_val <= env_clk_source_val;
-            debug_env_lr_val <= env_lr_val;
-            debug_env_wave_val <= env_wave_val;
-
             trigger := (osc_pulse AND not env_clk_source_val) OR (a0_pulse AND env_clk_source_val);
             effective_counter := (counter(4 downto 1)) & (counter(0) and not env_res);
             ctr_zero := '1' when effective_counter="00000" else '0';
             if (not halted and not env_write) and ctr_zero and not wav_repeat then
                 -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
                 halted_val := '1';
-            elsif ((halted and env_write) or (ctr_zero  and wav_repeat)) then
+            elsif ((halted and env_write) or (ctr_zero and wav_repeat)) then
                 -- process new env instruction here (this corresponds to position(3) or position(4))
                 -- load new wav defn from env_wav:
                 counter_output <= '0' when env_wave_val(2 downto 1)="00" else '1';
