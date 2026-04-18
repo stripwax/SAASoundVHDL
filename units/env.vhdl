@@ -61,6 +61,10 @@
 -- actually you can just do invert flip and associated logic using a 5-bit counter instead, the MSB is the flag to say when to invert.
 -- (hence why triangle in the above now shows invert_output=0)
 
+-- for 000 , does if right channel inverted, does it output constant high, then flip to constant zero at point (3) in waveform? or does it stay constant high?
+-- similarly for 001 - ?
+-- also for the other waves that don't repeat - what happens when the waveform ends and right channel inverted?
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
@@ -151,16 +155,21 @@ begin
                 
             end if;
 
-            if counter_output and not(halted_val) then
-                invert_value := wav_inverted or effective_counter(4);
-                intermediate_out := effective_counter(3 downto 0);
-                calc_output_left := intermediate_out xor (("111" & not env_res) and (invert_value & invert_value & invert_value & invert_value));
+            if halted_val then
+                output_left <= "0000";
+                output_right <= "0000";
             else
-                calc_output_left := "0000";
+                if counter_output then
+                    intermediate_out := effective_counter(3 downto 0);
+                else
+                    intermediate_out := "0000";
+                end if;
+                invert_value := wav_inverted or effective_counter(4);
+                -- question: is the "inverted 0000" (waveform 001) affected by the env_res?  like would the output be treated like 1110 instead of 1111 ?  what happens if you select that waveform and toggle env_res?
+                calc_output_left := intermediate_out xor (("111" & not env_res) and (invert_value & invert_value & invert_value & invert_value));
+                output_left <= calc_output_left;
+                output_right <= calc_output_left xor (("111" & not env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             end if;
-
-            output_left <= calc_output_left;
-            output_right <= calc_output_left xor (("111" & not env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             
             counter <= next_counter;
             halted <= halted_val;
