@@ -53,12 +53,13 @@
 -- 001 = constant high, repeat  =>  counter_output = 0, invert_output = 1, wav_repeat = 1, invert_flip = 0
 -- 010 = saw down, halt         =>  counter_output = 1, invert_output = 0, wav_repeat = 0, invert_flip = 0
 -- 011 = saw down, repeat       =>  counter_output = 1, invert_output = 0, wav_repeat = 1, invert_flip = 0
--- 100 = triangle, halt         =>  counter_output = 1, invert_output = 1, wav_repeat = 0, invert_flip = 1
--- 101 = triangle, repeat       =>  counter_output = 1, invert_output = 1, wav_repeat = 1, invert_flip = 1
+-- 100 = triangle, halt         =>  counter_output = 1, invert_output = 0, wav_repeat = 0, invert_flip = 1
+-- 101 = triangle, repeat       =>  counter_output = 1, invert_output = 0, wav_repeat = 1, invert_flip = 1
 -- 110 = saw up, halt           =>  counter_output = 1, invert_output = 1, wav_repeat = 0, invert_flip = 0
 -- 111 = saw up, repeat         =>  counter_output = 1, invert_output = 1, wav_repeat = 1, invert_flip = 0
 
 -- actually you can just do invert flip and associated logic using a 5-bit counter instead, the MSB is the flag to say when to invert.
+-- (hence why triangle in the above now shows invert_output=0)
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -86,7 +87,7 @@ architecture behaviour of env is
     signal counter: unsigned(4 downto 0) := (others=>'0');  -- only initialise to stop noise in simulation
     signal env_lr_buffered, env_clk_source_buffered : std_logic := '0';
     signal env_wave_buffered : std_logic_vector(2 downto 0) := "000";
-    signal counter_output, inverted, wav_repeat : std_logic := '0';
+    signal counter_output, wav_inverted, wav_repeat : std_logic := '0';
     signal halted : std_logic := '1';
 
 begin
@@ -102,6 +103,7 @@ begin
         variable halted_val : std_logic;
         variable invert_flip : std_logic;
         variable ctr_zero : std_logic;
+        variable invert_value : std_logic;
     begin
 
         if rising_edge(clk) then
@@ -135,7 +137,7 @@ begin
                 -- process new env instruction here (this corresponds to position(3) or position(4))
                 -- load new wav defn from env_wav:
                 counter_output <= '0' when env_wave_val(2 downto 1)="00" else '1';
-                inverted <= '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2)='1' else '0';
+                wav_inverted <= '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2 downto 1)="11" else '0';
                 wav_repeat <= env_wave_val(0);
                 invert_flip := '1' when env_wave_val(2 downto 1)="10" else '0';
                 next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
@@ -150,12 +152,13 @@ begin
             end if;
 
             if counter_output and not(halted_val) then
+                invert_value := wav_inverted or effective_counter(4);
                 intermediate_out := effective_counter(3 downto 0);
+                calc_output_left := intermediate_out xor (("111" & not env_res) and (invert_value & invert_value & invert_value & invert_value));
             else
-                intermediate_out := "0000";
+                calc_output_left := "0000";
             end if;
 
-            calc_output_left := intermediate_out xor (("111" & not env_res) and (inverted & inverted & inverted & inverted));
             output_left <= calc_output_left;
             output_right <= calc_output_left xor (("111" & not env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             
