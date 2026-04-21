@@ -64,6 +64,10 @@
 -- for 000 , does if right channel inverted, does it output constant high, then flip to constant zero at point (3) in waveform? or does it stay constant high?
 -- similarly for 001 - ?
 -- also for the other waves that don't repeat - what happens when the waveform ends and right channel inverted?
+-- answer: yes, the output of right channel when inverted is always the inverse of the left channel. So, for 000, right channel is constant high.
+-- for 001, right channel is constant zero.
+-- for 002, right channel fades up from zero to constant high
+-- etc
 
 library IEEE;
 use IEEE.STD_LOGIC_1164.all;
@@ -156,8 +160,7 @@ begin
             end if;
 
             if halted_val then
-                output_left <= "0000";
-                output_right <= "0000";
+                calc_output_left := "0000";
             else
                 if counter_output then
                     intermediate_out := effective_counter(3 downto 0);
@@ -166,10 +169,15 @@ begin
                 end if;
                 invert_value := wav_inverted or effective_counter(4);
                 -- question: is the "inverted 0000" (waveform 001) affected by the env_res?  like would the output be treated like 1110 instead of 1111 ?  what happens if you select that waveform and toggle env_res?
+                -- answer: yes! it is!  "inverted 0000" has a reduced output when setting env_res!
                 calc_output_left := intermediate_out xor (("111" & not env_res) and (invert_value & invert_value & invert_value & invert_value));
-                output_left <= calc_output_left;
-                output_right <= calc_output_left xor (("111" & not env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             end if;
+
+            output_left <= calc_output_left;
+            -- question: is the right channel of waveform 000, when inverted via env_lv_rl, also affected by the env_res?
+            -- answer: yes! it is!  The right channel has a reduced output when setting env_res!
+            -- I suppose this makes sense, it's consistent that both left and right channels have the same granularity of output
+            output_right <= calc_output_left xor (("111" & not env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             
             counter <= next_counter;
             halted <= halted_val;
