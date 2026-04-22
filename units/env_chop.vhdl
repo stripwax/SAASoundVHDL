@@ -51,7 +51,7 @@ begin
         env_step_6_7_14_15_l <= E_l(2) AND C(2) AND C(1);
         env_step_8_l <= E_l(0) AND C(3) AND NOT (C(0) OR C(1) OR C(2));
 
-        chop_mask_l <= not (env_step_0_l OR env_step_1_9_l OR env_step_2_5_10_13_l OR env_step_6_7_14_15_l OR env_step_8_l) OR NOT (envelope_enabled);
+        chop_mask_l <= (env_step_0_l OR env_step_1_9_l OR env_step_2_5_10_13_l OR env_step_6_7_14_15_l OR env_step_8_l) OR NOT (envelope_enabled);
         output_l <= input_l and chop_mask_l;
 
         E_r(3) <= env_r(3);
@@ -65,7 +65,7 @@ begin
         env_step_6_7_14_15_r <= E_r(2) AND C(2) AND C(1);
         env_step_8_r <= E_r(0) AND C(3) AND NOT (C(0) OR C(1) OR C(2));
 
-        chop_mask_r <= not (env_step_0_r OR env_step_1_9_r OR env_step_2_5_10_13_r OR env_step_6_7_14_15_r OR env_step_8_r) OR NOT (envelope_enabled);
+        chop_mask_r <= (env_step_0_r OR env_step_1_9_r OR env_step_2_5_10_13_r OR env_step_6_7_14_15_r OR env_step_8_r) OR NOT (envelope_enabled);
         output_r <= input_r and chop_mask_r;
 
 
