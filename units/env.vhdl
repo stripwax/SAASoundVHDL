@@ -101,7 +101,7 @@ architecture behaviour of env is
 begin
     process(clk)
         variable trigger : std_logic;
-        variable effective_counter : unsigned(4 downto 0);
+        variable next_effective_counter : unsigned(4 downto 0);
         variable next_counter : unsigned(4 downto 0);
         variable intermediate_out : unsigned(3 downto 0);
         variable calc_output_left : unsigned(3 downto 0);
@@ -110,8 +110,9 @@ begin
         variable env_clk_source_val : std_logic;
         variable halted_val : std_logic;
         variable invert_flip : std_logic;
-        variable ctr_zero : std_logic;
+        variable ctr_overflow : std_logic;
         variable invert_value : std_logic;
+        variable counter_output_val, wav_inverted_val, wav_repeat_val : std_logic;
     begin
 
         if rising_edge(clk) then
@@ -122,6 +123,10 @@ begin
             env_lr_val := env_lr_buffered;
             env_clk_source_val := env_clk_source_buffered;
             halted_val := halted;
+            counter_output_val := counter_output;
+            wav_inverted_val := wav_inverted;
+            wav_repeat_val := wav_repeat;
+
             if env_write then
                 env_wave_buffered <= env_wave;
                 env_wave_val := env_wave;
@@ -136,38 +141,42 @@ begin
             end if;
 
             trigger := (osc_pulse AND not env_clk_source_val) OR (a0_pulse AND env_clk_source_val);
-            effective_counter := (counter(4 downto 1)) & (counter(0) and not env_res);
-            ctr_zero := '1' when effective_counter="00000" else '0';
-            if (not halted and not env_write) and ctr_zero and not wav_repeat then
-                -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
-                halted_val := '1';
-            elsif ((halted and env_write) or (ctr_zero and wav_repeat)) then
-                -- process new env instruction here (this corresponds to position(3) or position(4))
-                -- load new wav defn from env_wav:
-                counter_output <= '0' when env_wave_val(2 downto 1)="00" else '1';
-                wav_inverted <= '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2 downto 1)="11" else '0';
-                wav_repeat <= env_wave_val(0);
-                invert_flip := '1' when env_wave_val(2 downto 1)="10" else '0';
-                next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
-            elsif (halted_val='0' and trigger='1') then
+            if (halted_val='0' and trigger='1') then
                 if env_res='0' then
                     -- 4 bit mode
                     next_counter := counter-1;
                 else
                     next_counter := counter-2;  -- based on my understanding that LSB is still actually preserved when the resolution is changed from 4 to 3 bits (easily confirmed by changing resolution back to 4 bits, in the SAME env wave cycle, there's a SAA test case for that in the .dsk)
                 end if;
-                
+            end if;
+            next_effective_counter := (next_counter(4 downto 1)) & (next_counter(0) or env_res);
+            ctr_overflow := '1' when next_effective_counter="11111" else '0';
+            if (not halted and not env_write) and ctr_overflow and not wav_repeat then
+                -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
+                next_counter := "00000";
+                halted_val := '1';
+            elsif ((halted and env_write) or (ctr_overflow and wav_repeat)) then
+                -- process new env instruction here (this corresponds to position(3) or position(4))
+                -- load new wav defn from env_wav:
+                counter_output_val := '0' when env_wave_val(2 downto 1)="00" else '1';
+                counter_output <= counter_output_val;
+                wav_inverted_val := '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2 downto 1)="11" else '0';
+                wav_inverted <= wav_inverted_val;
+                wav_repeat_val := env_wave_val(0);
+                wav_repeat <= wav_repeat_val;
+                invert_flip := '1' when env_wave_val(2 downto 1)="10" else '0';
+                next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
             end if;
 
             if halted_val then
                 calc_output_left := "0000";
             else
-                if counter_output then
-                    intermediate_out := effective_counter(3 downto 0);
+                if counter_output_val then
+                    intermediate_out := (next_counter(3 downto 1)) & (next_counter(0) and not env_res);
                 else
                     intermediate_out := "0000";
                 end if;
-                invert_value := wav_inverted or effective_counter(4);
+                invert_value := wav_inverted_val or next_counter(4);
                 -- question: is the "inverted 0000" (waveform 001) affected by the env_res?  like would the output be treated like 1110 instead of 1111 ?  what happens if you select that waveform and toggle env_res?
                 -- answer: yes! it is!  "inverted 0000" has a reduced output when setting env_res!
                 calc_output_left := intermediate_out xor (("111" & not env_res) and (invert_value & invert_value & invert_value & invert_value));
