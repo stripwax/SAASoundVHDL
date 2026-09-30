@@ -39,18 +39,6 @@ architecture behaviour of saa1099_digital_output is
     signal amp3 : std_logic_vector(7 downto 0);
     signal amp4 : std_logic_vector(7 downto 0);
     signal amp5 : std_logic_vector(7 downto 0);
-    signal freq0 : std_logic_vector(7 downto 0);
-    signal freq1 : std_logic_vector(7 downto 0);
-    signal freq2 : std_logic_vector(7 downto 0);
-    signal freq3 : std_logic_vector(7 downto 0);
-    signal freq4 : std_logic_vector(7 downto 0);
-    signal freq5 : std_logic_vector(7 downto 0);
-    signal oct0 : std_logic_vector(2 downto 0);
-    signal oct1 : std_logic_vector(2 downto 0);
-    signal oct2 : std_logic_vector(2 downto 0);
-    signal oct3 : std_logic_vector(2 downto 0);
-    signal oct4 : std_logic_vector(2 downto 0);
-    signal oct5 : std_logic_vector(2 downto 0);
     signal freq0_en : std_logic; -- frequency enable
     signal freq1_en : std_logic;
     signal freq2_en : std_logic;
@@ -78,7 +66,7 @@ architecture behaviour of saa1099_digital_output is
     signal sync_rst : std_logic;
     signal enable : std_logic := '0';
 
-    signal a0_pulse: std_logic;
+    signal a0_pulse, a0_wr, a0_wr_prev: std_logic;
 
     signal osc0_output: std_logic;
     signal osc0_trigger: std_logic;
@@ -93,20 +81,27 @@ architecture behaviour of saa1099_digital_output is
     signal osc5_output: std_logic;
     signal osc5_trigger: std_logic;  -- unused
 
+    signal freq0_wr, freq1_wr, freq2_wr, freq3_wr, freq4_wr, freq5_wr: std_logic;
+    signal freq0_wr_prev, freq1_wr_prev, freq2_wr_prev, freq3_wr_prev, freq4_wr_prev, freq5_wr_prev: std_logic;
+    signal freq0_wr_pulse, freq1_wr_pulse, freq2_wr_pulse, freq3_wr_pulse, freq4_wr_pulse, freq5_wr_pulse: std_logic;
+    signal oct01_wr, oct23_wr, oct45_wr: std_logic;
+    signal oct01_wr_prev, oct23_wr_prev, oct45_wr_prev: std_logic;
     signal oct01_wr_pulse, oct23_wr_pulse, oct45_wr_pulse: std_logic;
+    signal env0_wr, env1_wr : std_logic;
+    signal env0_wr_prev, env1_wr_prev : std_logic;
+    signal env0_wr_pulse, env1_wr_pulse : std_logic;
 
     signal noise0_output, noise1_output : std_logic;
     signal noise_clks : std_logic_vector(2 downto 0);
     signal octave_clks : std_logic_vector(7 downto 0);
     signal amp0l_out, amp0r_out, amp1l_out, amp1r_out, amp2l_out, amp2r_out, amp3l_out, amp3r_out, amp4l_out, amp4r_out, amp5l_out, amp5r_out : std_logic;
-    signal env0_wr_pulse, env1_wr_pulse : std_logic;
     signal env0l_level_out, env0r_level_out, env1l_level_out, env1r_level_out : unsigned(3 downto 0);
     signal env0l_chop_out, env0r_chop_out, env1l_chop_out, env1r_chop_out : std_logic;
     signal mixer0_out, mixer1_out, mixer2_out, mixer3_out, mixer4_out, mixer5_out : std_logic;
     signal step_ctr : unsigned(5 downto 0);
 
     -- edge detection:
-    signal wr_n_prev, cs_n_prev : std_logic;
+    signal wr_edge : std_logic;
 
     -- debugging:
     signal outl_sum : unsigned(2 downto 0);
@@ -123,72 +118,78 @@ begin
         );
 
     OSC0: entity work.osc
+        generic map (oct_in_upper => false)
         port map (
             clk => clk,
             octave_clks => octave_clks,
             sync => sync_rst,
-            frequency => unsigned(freq0),
-            octave => unsigned(oct0),
+            data => d,
+            freq_wr => freq0_wr_pulse,
             octave_wr => oct01_wr_pulse,
             output => osc0_output,
             trigger => osc0_trigger
         );
 
     OSC1: entity work.osc
+        generic map (oct_in_upper => true)
         port map (
             clk => clk,
             octave_clks => octave_clks,
             sync => sync_rst,
-            frequency => unsigned(freq1),
-            octave => unsigned(oct1),
+            data => d,
+            freq_wr => freq1_wr_pulse,
             octave_wr => oct01_wr_pulse,
             output => osc1_output,
             trigger => osc1_trigger
         );
 
     OSC2: entity work.osc
+        generic map (oct_in_upper => false)
         port map (
             clk => clk,
             octave_clks => octave_clks,
             sync => sync_rst,
-            frequency => unsigned(freq2),
-            octave => unsigned(oct2),
+            data => d,
+            freq_wr => freq2_wr_pulse,
             octave_wr => oct23_wr_pulse,
             output => osc2_output,
             trigger => osc2_trigger
         );
 
     OSC3: entity work.osc
+        generic map (oct_in_upper => true)
         port map (
             clk => clk,
             octave_clks => octave_clks,
             sync => sync_rst,
-            frequency => unsigned(freq3),
-            octave => unsigned(oct3),
+            data => d,
+            freq_wr => freq3_wr_pulse,
             octave_wr => oct23_wr_pulse,
             output => osc3_output,
             trigger => osc3_trigger
         );
 
     OSC4: entity work.osc
+        generic map (oct_in_upper => false)
         port map (
             clk => clk,
             octave_clks => octave_clks,
             sync => sync_rst,
-            frequency => unsigned(freq4),
-            octave => unsigned(oct4),
+            data => d,
+            freq_wr => freq4_wr_pulse,
             octave_wr => oct45_wr_pulse,
             output => osc4_output,
             trigger => osc4_trigger
         );
 
     OSC5: entity work.osc
+        generic map (oct_in_upper => true)
         port map (
             clk => clk,
             octave_clks => octave_clks,
             sync => sync_rst,
-            frequency => unsigned(freq5),
-            octave => unsigned(oct5),
+            data => d,
+            freq_wr => freq5_wr_pulse,
             octave_wr => oct45_wr_pulse,
             output => osc5_output,
             trigger => osc5_trigger
@@ -407,131 +408,150 @@ begin
     outl_sum <= unsigned("00" & outl(0 downto 0)) + unsigned("00" & outl(1 downto 1)) + unsigned("00" & outl(2 downto 2)) + unsigned("00" & outl(3 downto 3)) + unsigned("00" & outl(4 downto 4)) + unsigned("00" & outl(5 downto 5));
     outr_sum <= unsigned("00" & outr(0 downto 0)) + unsigned("00" & outr(1 downto 1)) + unsigned("00" & outr(2 downto 2)) + unsigned("00" & outr(3 downto 3)) + unsigned("00" & outr(4 downto 4)) + unsigned("00" & outr(5 downto 5));
 
-    process (clk)
-        variable wr_edge : std_logic;
+    -- detect rising edge on wr (with cs still asserted) and/or cs (with wr still asserted)
+    wr_edge <= (wr_n or cs_n);
+
+    -- output pulse if write occured with a0='1' (i.e. a write that sets the register as opposed to a write that sets the data)
+    a0_pulse <= (a0_wr and not a0_wr_prev);
+
+    -- output pulses related to specific register writes
+    env0_wr_pulse <= (env0_wr and not env0_wr_prev);
+    env1_wr_pulse <= (env1_wr and not env1_wr_prev);
+    oct01_wr_pulse <= (oct01_wr and not oct01_wr_prev);
+    oct23_wr_pulse <= (oct23_wr and not oct23_wr_prev);
+    oct45_wr_pulse <= (oct45_wr and not oct45_wr_prev);
+    freq0_wr_pulse <= (freq0_wr and not freq0_wr_prev);
+    freq1_wr_pulse <= (freq1_wr and not freq1_wr_prev);
+    freq2_wr_pulse <= (freq2_wr and not freq2_wr_prev);
+    freq3_wr_pulse <= (freq3_wr and not freq3_wr_prev);
+    freq4_wr_pulse <= (freq4_wr and not freq4_wr_prev);
+    freq5_wr_pulse <= (freq5_wr and not freq5_wr_prev);
+
+    com: process (wr_edge)
     begin
-        if rising_edge(clk) then
+        -- write cycle completes when wr is deasserted, and the clock in which this occurs
+        -- is what drives the a0_pulse and/or env[01]_wr
 
-            -- write cycle completes when wr is deasserted, and the clock in which this occurs
-            -- is what drives the a0_pulse and/or env[01]_wr
+        -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
+        a0_wr <= '0';
 
-            -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
-            a0_pulse <= '0';
+        -- we need to track if envelope registers were written to, since this is a trigger for the env gen
+        -- to reset waveform (see datasheet re position "3") as well as latch incoming new data
+        env0_wr <= '0';
+        env1_wr <= '0';
 
-            -- we need to track if envelope registers were written to, since this is a trigger for the env gen
-            -- to reset waveform (see datasheet re position "3") as well as latch incoming new data
-            env0_wr_pulse <= '0';
-            env1_wr_pulse <= '0';
+        -- we need to track if octave registers were written to, since this is a trigger for the oscillator
+        -- to also capture the freq registers at the same time
+        oct01_wr <= '0';
+        oct23_wr <= '0';
+        oct45_wr <= '0';
+        -- for freq register, the register is implemented on the osc entity so we need to decode that and pass it over
+        freq0_wr <= '0';
+        freq1_wr <= '0';
+        freq2_wr <= '0';
+        freq3_wr <= '0';
+        freq4_wr <= '0';
+        freq5_wr <= '0';
 
-            -- we need to track if octave registers were written to, since this is a trigger for the oscillator
-            -- to also capture the freq registers at the same time
-            oct01_wr_pulse <= '0';
-            oct23_wr_pulse <= '0';
-            oct45_wr_pulse <= '0';
+        if rising_edge(wr_edge) then
 
-            -- detect rising edge on wr (with cs still asserted) and/or cs (with wr still asserted)
-            wr_edge := (wr_n and not wr_n_prev) or (cs_n and not cs_n_prev);
-            wr_n_prev <= wr_n;
-            cs_n_prev <= cs_n;
-
-            if wr_edge then
-
-                if a0='1' then
-                    -- a0 is high (i.e. register write)
-                    reg <= d(4 downto 0); -- higher bits unused; register file repeats according to datasheet
-                    -- set a0_pulse for one cycle (triggers for env if configured that way)
-                    a0_pulse <= '1';
-
+            if a0='1' then
+                -- a0 is high (i.e. register write)
+                reg <= d(4 downto 0); -- higher bits unused; register file repeats according to datasheet
+                -- set a0_pulse for one cycle (triggers for env if configured that way)
+                a0_wr <= '1';
+            else
+                -- amplitude register; need to consider wait states
+                if reg(4 downto 0) = "00000" then
+                    amp0 <= d;
+                elsif reg(4 downto 0) = "00001" then
+                    amp1 <= d;
+                elsif reg(4 downto 0) = "00010" then
+                    amp2 <= d;
+                elsif reg(4 downto 0) = "00011" then
+                    amp3 <= d;
+                elsif reg(4 downto 0) = "00100" then
+                    amp4 <= d;
+                elsif reg(4 downto 0) = "00101" then
+                    amp5 <= d;
+                -- freq register
+                elsif reg(4 downto 0) = "01000" then
+                    freq0_wr <= '1';
+                elsif reg(4 downto 0) = "01001" then
+                    freq1_wr <= '1';
+                elsif reg(4 downto 0) = "01010" then
+                    freq2_wr <= '1';
+                elsif reg(4 downto 0) = "01011" then
+                    freq3_wr <= '1';
+                elsif reg(4 downto 0) = "01100" then
+                    freq4_wr <= '1';
+                elsif reg(4 downto 0) = "01101" then
+                    freq5_wr <= '1';
+                elsif reg(4 downto 0) = "10000" then
+                    -- oct0 and 1 register
+                    oct01_wr <= '1';
+                elsif reg(4 downto 0) = "10001" then
+                    -- oct2 and 3 register
+                    oct23_wr <= '1';
+                elsif reg(4 downto 0) = "10010" then
+                    -- oct4 and 5 register
+                    oct45_wr <= '1';
+                elsif reg(4 downto 0) = "10100" then
+                    freq0_en <= d(0);
+                    freq1_en <= d(1);
+                    freq2_en <= d(2);
+                    freq3_en <= d(3);
+                    freq4_en <= d(4);
+                    freq5_en <= d(5);
+                elsif reg(4 downto 0) = "10101" then
+                    noise0_en <= d(0);
+                    noise1_en <= d(1);
+                    noise2_en <= d(2);
+                    noise3_en <= d(3);
+                    noise4_en <= d(4);
+                    noise5_en <= d(5);
+                elsif reg(4 downto 0) = "10110" then
+                    noise0_sel <= d(1 downto 0);
+                    noise1_sel <= d(5 downto 4);
+                elsif reg(4 downto 0) = "11000" then
+                    env0_lr <= d(0);
+                    env0_wave(2 downto 0) <= d(3 downto 1);
+                    env0_res <= d(4);
+                    env0_clk_source <= d(5);
+                    env0_en <= d(7);
+                    env0_wr <= '1';
+                elsif reg(4 downto 0) = "11001" then
+                    env1_lr <= d(0);
+                    env1_wave(2 downto 0) <= d(3 downto 1);
+                    env1_res <= d(4);
+                    env1_clk_source <= d(5);
+                    env1_en <= d(7);
+                    env1_wr <= '1';
+                elsif reg(4 downto 0) = "11100" then
+                    enable <= d(0);
+                    sync_rst <= d(1);
                 else
-                    if reg(4 downto 3) = "00" then
-                        -- amplitude register; need to consider wait states
-                        --
-                        if reg(2 downto 0) = "000" then
-                            amp0 <= d;
-                        elsif reg(2 downto 0) = "001" then
-                            amp1 <= d;
-                        elsif reg(2 downto 0) = "010" then
-                            amp2 <= d;
-                        elsif reg(2 downto 0) = "011" then
-                            amp3 <= d;
-                        elsif reg(2 downto 0) = "100" then
-                            amp4 <= d;
-                        elsif reg(2 downto 0) = "101" then
-                            amp5 <= d;
-                        else
-                            -- unused
-                        end if;
-                    elsif reg(4 downto 3) = "01" then
-                        -- freq register
-                        if reg(2 downto 0) = "000" then
-                            freq0 <= d;
-                        elsif reg(2 downto 0) = "001" then
-                            freq1 <= d;
-                        elsif reg(2 downto 0) = "010" then
-                            freq2 <= d;
-                        elsif reg(2 downto 0) = "011" then
-                            freq3 <= d;
-                        elsif reg(2 downto 0) = "100" then
-                            freq4 <= d;
-                        elsif reg(2 downto 0) = "101" then
-                            freq5 <= d;
-                        else
-                            -- unused
-                        end if;
-                    elsif reg(4 downto 0) = "10000" then
-                        -- oct0 and 1 register
-                        oct0(2 downto 0) <= d(2 downto 0);
-                        oct1(2 downto 0) <= d(6 downto 4);
-                        oct01_wr_pulse <= '1';
-                    elsif reg(4 downto 0) = "10001" then
-                        -- oct2 and 3 register
-                        oct2(2 downto 0) <= d(2 downto 0);
-                        oct3(2 downto 0) <= d(6 downto 4);
-                        oct23_wr_pulse <= '1';
-                    elsif reg(4 downto 0) = "10010" then
-                        -- oct4 and 5 register
-                        oct4(2 downto 0) <= d(2 downto 0);
-                        oct5(2 downto 0) <= d(6 downto 4);
-                        oct45_wr_pulse <= '1';
-                    elsif reg(4 downto 0) = "10100" then
-                        freq0_en <= d(0);
-                        freq1_en <= d(1);
-                        freq2_en <= d(2);
-                        freq3_en <= d(3);
-                        freq4_en <= d(4);
-                        freq5_en <= d(5);
-                    elsif reg(4 downto 0) = "10101" then
-                        noise0_en <= d(0);
-                        noise1_en <= d(1);
-                        noise2_en <= d(2);
-                        noise3_en <= d(3);
-                        noise4_en <= d(4);
-                        noise5_en <= d(5);
-                    elsif reg(4 downto 0) = "10110" then
-                        noise0_sel <= d(1 downto 0);
-                        noise1_sel <= d(5 downto 4);
-                    elsif reg(4 downto 0) = "11000" then
-                        env0_lr <= d(0);
-                        env0_wave(2 downto 0) <= d(3 downto 1);
-                        env0_res <= d(4);
-                        env0_clk_source <= d(5);
-                        env0_en <= d(7);
-                        env0_wr_pulse <= '1';
-                    elsif reg(4 downto 0) = "11001" then
-                        env1_lr <= d(0);
-                        env1_wave(2 downto 0) <= d(3 downto 1);
-                        env1_res <= d(4);
-                        env1_clk_source <= d(5);
-                        env1_en <= d(7);
-                        env1_wr_pulse <= '1';
-                    elsif reg(4 downto 0) = "11100" then
-                        enable <= d(0);
-                        sync_rst <= d(1);
-                    else
-                        -- unused
-                    end if;
+                    -- unused
                 end if;
             end if;
         end if;
-    end process;
+
+    end process com;
+
+    seq: process (clk)
+    begin
+        a0_wr_prev <= a0_wr;
+        env0_wr_prev <= env0_wr;
+        env1_wr_prev <= env1_wr;
+        oct01_wr_prev <= oct01_wr;
+        oct23_wr_prev <= oct23_wr;
+        oct45_wr_prev <= oct45_wr;
+        freq0_wr_prev <= freq0_wr;
+        freq1_wr_prev <= freq1_wr;
+        freq2_wr_prev <= freq2_wr;
+        freq3_wr_prev <= freq3_wr;
+        freq4_wr_prev <= freq4_wr;
+        freq5_wr_prev <= freq5_wr;
+    end process seq;
+
 end behaviour;
