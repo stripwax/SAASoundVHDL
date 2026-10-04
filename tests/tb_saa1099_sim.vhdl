@@ -111,7 +111,7 @@ begin
     variable sample_pos : unsigned(31 downto 0);
     variable the_word_ns : string(2 downto 1);
     variable selector : bit_vector(1 downto 0);
-    variable data : bit_vector(7 downto 0);
+    variable data : std_logic_vector(7 downto 0);
     variable sample_ns : unsigned(127 downto 0) := (others => '0');
     variable current_ns : unsigned(127 downto 0) := (others => '0');
     variable ns_per_sample : unsigned(15 downto 0) := to_unsigned(22675, 16);
@@ -156,42 +156,39 @@ begin
             severity failure;
 
             read(text_line, data_byte, ok);
+            -- write address, or data, to chip.  this takes four clock periods (two full clock cycles).
             if not ok then
-                -- just a reg write
+                -- address write (i.e. set register)
                 write(OUTPUT, "REG " & to_hstring(reg) & LF);
                 a0 <= '1';
-                wr_n <= '0';
-                cs_n <= '0';
-                d <= std_logic_vector(reg);
-                clk <= '1';
-                wait for 125 ns;
-                clk <= '0';
-                wait for 125 ns;
-                wr_n <= '1';
-                cs_n <= '1';
-                clk <= '1';
-                wait for 125 ns;
-                clk <= '0';
-                wait for 125 ns;
-                current_ns := current_ns + to_unsigned(1000, 10);
+                data := std_logic_vector(reg);
             else
+                -- data write
                 write(OUTPUT, "DATA: (REG" & to_hstring(reg) & ") = " & to_hstring(data_byte) & LF);
                 a0 <= '0';
-                wr_n <= '0';
-                cs_n <= '0';
-                d <= std_logic_vector(data_byte);
-                clk <= '1';
-                wait for 125 ns;
-                clk <= '0';
-                wait for 125 ns;
-                wr_n <= '1';
-                cs_n <= '1';
-                clk <= '1';
-                wait for 125 ns;
-                clk <= '0';
-                wait for 125 ns;
-                current_ns := current_ns + to_unsigned(1000, 10);
+                data := std_logic_vector(data_byte);
             end if;
+            -- common:
+            clk <= '1';
+            wait for 20 ns;              -- cumulative: 20ns
+            cs_n <= '0';
+            wait for 30 ns;              -- cumulative: 50ns
+            wr_n <= '0';
+            d <= data;
+            wait for 75 ns;             -- cumulative: 125ns
+            clk <= '0';
+            wait for 25 ns;             -- cumulative: 150ns
+            wr_n <= '1';
+            cs_n <= '1';
+            wait for 10 ns;             -- cumulative: 160ns
+            a0 <= 'X';
+            d <= (others=>'X');
+            wait for 90 ns;             -- cumulative: 250ns
+            clk <= '1';
+            wait for 125 ns;            -- cumulative: 375ns
+            clk <= '0';
+            wait for 125 ns;            -- cumulative: 500ns
+            current_ns := current_ns + to_unsigned(500, 10);
 
         end loop;
         
