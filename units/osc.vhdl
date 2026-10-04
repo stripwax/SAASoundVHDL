@@ -21,14 +21,17 @@ use IEEE.NUMERIC_STD.all;
 entity osc is
   -- square wave oscillator output with frequency & octave control inputs
   -- and count-zero trigger output
+  generic (
+    oct_in_upper : boolean := false
+  );
   port (
     clk: in std_logic;
-    octave_clks: std_logic_vector(7 downto 0);
+    octave_clks: in std_logic_vector(7 downto 0);
     sync: in std_logic;
-    frequency: in unsigned(7 downto 0);
-    octave: in unsigned(2 downto 0);
+    data: in std_logic_vector(7 downto 0);
+    freq_wr: in std_logic;
     octave_wr: in std_logic;
-    output: out std_logic;
+    output: out std_logic := '0';
     trigger: out std_logic
     );
 end osc;
@@ -37,10 +40,31 @@ architecture behaviour of osc is
     -- we have a 9-bit counter , initialised with the value of the frequency register
     -- and counting up until all bits are set
     signal counter: unsigned(8 downto 0) := (others=>'0');
-    signal latched_octave: unsigned(2 downto 0);
-    signal latched_freq: unsigned(7 downto 0);
+    signal reg_octave: unsigned(2 downto 0) := (others=>'0'); -- REMOVE INIT?
+    signal latched_octave: unsigned(2 downto 0) := (others=>'0'); -- REMOVE INIT?;
+    signal reg_frequency: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?;
+    signal latched_freq: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?;
 begin
-    process(clk)
+
+    decode_freq: process(freq_wr)
+    begin
+        if rising_edge(freq_wr) then
+            reg_frequency <= unsigned(data);
+        end if;
+    end process;
+
+    decode_octave: process(octave_wr)
+    begin
+        if rising_edge(octave_wr) then
+            if oct_in_upper then
+                reg_octave <= unsigned(data(6 downto 4));
+            else
+                reg_octave <= unsigned(data(2 downto 0));
+            end if;
+        end if;
+    end process;
+
+    seq: process(clk)
         variable octave_clk_pulse: std_logic;
         variable load: std_logic;
         variable overflow: std_logic;
@@ -55,7 +79,7 @@ begin
             -- which enables the next period to set the octave and frequency at the same time (no glitch)
             -- setting frequency after that will be ignored until the next half cycle
             if octave_wr='1' or sync='1' then
-                latched_freq <= frequency;
+                latched_freq <= reg_frequency;
             end if;
 
             trigger <= '0'; -- assume not triggered, but clauses below will pulse this as required
@@ -88,10 +112,10 @@ begin
             end if;
 
             if load='1' then
-                latched_freq <= frequency;
-                latched_octave <= octave;
+                latched_freq <= reg_frequency;
+                latched_octave <= reg_octave;
             end if;
-        
+
         end if;
 
     end process;
