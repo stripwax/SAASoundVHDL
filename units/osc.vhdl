@@ -46,7 +46,7 @@ architecture behaviour of osc is
     signal latched_freq: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?;
 begin
 
-    decode_freq: process(freq_wr)
+    decode_freq: process(freq_wr) -- this is wrong because this is the clocked pulse not the async reg wr.  I might just put frequency and octave reg back in saa1099 chip?  although it probably works anyway.  check?
     begin
         if rising_edge(freq_wr) then
             reg_frequency <= unsigned(data);
@@ -78,7 +78,7 @@ begin
             -- writing to octave register triggers a copy (latch) of the frequency register
             -- which enables the next period to set the octave and frequency at the same time (no glitch)
             -- setting frequency after that will be ignored until the next half cycle
-            if octave_wr='1' or sync='1' then
+            if octave_wr='1' or sync='1' then  -- (yes, this octave_wr should be the clocked pulse. which is only high if the freq has just been written to since the last clock pulse)
                 latched_freq <= reg_frequency;
             end if;
 
