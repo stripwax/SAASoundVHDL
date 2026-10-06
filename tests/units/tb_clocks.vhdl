@@ -28,19 +28,21 @@ architecture behaviour of tb_clocks is
   component clocks
   port (
         clk: in std_logic;
-        pulse_div: out std_logic_vector(2 downto 0);
-        step_ctr: out unsigned(5 downto 0)
+        step_ctr: out unsigned(5 downto 0);
+        octave_clks: out std_logic_vector(7 downto 0);
+        noise_clks: out std_logic_vector(2 downto 0)
     );
   end component;
 
   --  Specifies which entity is bound with the component.
   for clocks_0: clocks use entity work.clocks;
     signal clk: std_logic;
-    signal pulse_div: std_logic_vector(2 downto 0);
     signal step_ctr: unsigned(5 downto 0);
+    signal octave_clks: std_logic_vector(7 downto 0);
+    signal noise_clks: std_logic_vector(2 downto 0);
 begin
   --  Component instantiation.
-  clocks_0: clocks port map (clk => clk, pulse_div => pulse_div, step_ctr => step_ctr);
+  clocks_0: clocks port map (clk => clk, step_ctr => step_ctr, octave_clks => octave_clks, noise_clks => noise_clks);
 
   --  This process does the real job.
   process
@@ -54,35 +56,35 @@ begin
     clk <= '1';
     wait for 1 ns;
     assert step_ctr = "000000";
-    assert pulse_div = "111";
+    assert octave_clks = "11111111";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
     assert step_ctr = "000001";
-    assert pulse_div = "000";
+    assert octave_clks = "00000000";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
     assert step_ctr = "000010";
-    assert pulse_div = "000";
+    assert octave_clks = "00000001";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
     assert step_ctr = "000011";
-    assert pulse_div = "000";
+    assert octave_clks = "00000000";
     clk <= '0';
     wait for 1 ns;
 
     clk <= '1';
     wait for 1 ns;
     assert step_ctr = "000100";
-    assert pulse_div = "000";
+    assert octave_clks = "00000011";
     clk <= '0';
     wait for 1 ns;
 
