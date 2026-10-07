@@ -58,7 +58,7 @@ architecture behav of tb_saa1099_sim is
         end if;
     end function decodeDigit;
 
-    procedure read(l : inout line; val : inout unsigned; ok : out boolean) is
+    procedure read_decode_digit(l : inout line; val : inout unsigned; ok : out boolean) is
         variable c : character;
         variable done : boolean := false;
         variable c_ok : boolean := true;
@@ -67,10 +67,10 @@ architecture behav of tb_saa1099_sim is
     begin
         while not done loop
             read(l, c, c_ok);
-            if not c_ok then
+            if not c_ok then -- end of line
                 done := true;
             else
-                if (decodeDigit(c) < 0) then
+                if (decodeDigit(c) < 0) then -- found a character but it was non-numeric so end here
                     done := true;
                 else
                     something := true;
@@ -83,9 +83,9 @@ architecture behav of tb_saa1099_sim is
         if something then
             ok := true;
         else
-            ok := c_ok;
+            ok := false;
         end if;
-    end procedure read;
+    end procedure read_decode_digit;
 
 begin
   --  Component instantiation.
@@ -113,15 +113,15 @@ begin
     variable selector : bit_vector(1 downto 0);
     variable data : std_logic_vector(7 downto 0);
     variable sample_ns : unsigned(127 downto 0) := (others => '0');
-    variable current_ns : unsigned(127 downto 0) := (others => '0');
+    variable current_ns : unsigned(127 downto 0) := to_unsigned(69469*22675, 128); -- (others => '0');
     variable ns_per_sample : unsigned(15 downto 0) := to_unsigned(22675, 16);
     begin
 
         clk <= '1';
-        wait for 125 ns;
+        wait for 62.5 ns;
         clk <= '0';
-        wait for 125 ns;
-        current_ns := current_ns + to_unsigned(250, 8);
+        wait for 62.5 ns;
+        current_ns := current_ns + to_unsigned(125, 8);
 
         while not endfile(text_file) loop
         
@@ -132,30 +132,28 @@ begin
                 next;
             end if;
 
-            --read(text_line, wait_time, ok);
-            read(text_line, sample_pos, ok);
-            assert ok
-            report "Read 'sample_pos' failed for line: " & text_line.all
-            severity failure;
+            read_decode_digit(text_line, sample_pos, ok);
+            assert ok report "Read 'sample_pos' failed for line: " & text_line.all severity failure;
+            report ".";
 
             sample_ns := resize(sample_pos * ns_per_sample, sample_ns'length);
 
             if sample_ns > current_ns then
                 while sample_ns > current_ns loop
                     clk <= '1';
-                    wait for 125 ns;
+                    wait for 62.5 ns;
                     clk <= '0';
-                    wait for 125 ns;
-                    current_ns := current_ns + to_unsigned(250, 8);
+                    wait for 62.5 ns;
+                    current_ns := current_ns + to_unsigned(125, 8);
                 end loop;
             end if;
 
-            read(text_line, reg, ok);
+            read_decode_digit(text_line, reg, ok);
             assert ok
             report "Read 'reg' failed for line: " & text_line.all
             severity failure;
 
-            read(text_line, data_byte, ok);
+            read_decode_digit(text_line, data_byte, ok);
             -- write address, or data, to chip.  this takes four clock periods (two full clock cycles).
             if not ok then
                 -- address write (i.e. set register)
@@ -169,26 +167,26 @@ begin
                 data := std_logic_vector(data_byte);
             end if;
             -- common:
-            clk <= '1';
-            wait for 20 ns;              -- cumulative: 20ns
+            clk <= '1';                 -- @0ns     :                                                           clk_cum: 0ns            TICK
+            wait for 20 ns;             -- @20ns    :  a0 fall to cs fall: 20ns                                 clk_cum: 20ns
             cs_n <= '0';
-            wait for 30 ns;              -- cumulative: 50ns
+            wait for 30 ns;             -- @50ns    :  a0 fall to wr fall: 50ns; cs fall to wr fall: 30ns       clk_cum: 50ns
             wr_n <= '0';
             d <= data;
-            wait for 75 ns;             -- cumulative: 125ns
+            wait for 12.5 ns;           -- @62.5ns  :                                                           clk_cum: 62.5ns  => 0   TOCK
             clk <= '0';
-            wait for 25 ns;             -- cumulative: 150ns
+            wait for 62.5 ns;           -- @125ns   :                                                           clk_cum: 62.5ns  => 0   TICK
+            clk <= '1';
+            wait for 25 ns;             -- @150ns   :  wr low time (100ns); cs hold from wr high (0)            clk_cum: 25ns
             wr_n <= '1';
             cs_n <= '1';
-            wait for 10 ns;             -- cumulative: 160ns
+            wait for 10 ns;             -- @160ns   :  a0 and data hold from wr high (0=>10)                    clk_cum: 35ns
             a0 <= 'X';
             d <= (others=>'X');
-            wait for 90 ns;             -- cumulative: 250ns
-            clk <= '1';
-            wait for 125 ns;            -- cumulative: 375ns
+            wait for 27.5 ns;           -- @187.5ns :                                                           clk_cum: 62.5ns  => 0   TOCK
             clk <= '0';
-            wait for 125 ns;            -- cumulative: 500ns
-            current_ns := current_ns + to_unsigned(500, 10);
+            wait for 62.5 ns;           -- @250ns   :
+            current_ns := current_ns + to_unsigned(250, 10);
 
         end loop;
         
