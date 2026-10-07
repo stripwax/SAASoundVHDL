@@ -68,9 +68,9 @@ architecture behaviour of tb_osc is
     begin
         for x in 1 to n loop
             m_clk <= '1';
-            wait for 125 ns;
+            wait for 62.5 ns;
             m_clk <= '0';
-            wait for 125 ns;
+            wait for 62.5 ns;
         end loop;
     end;
 
@@ -128,10 +128,10 @@ architecture behaviour of tb_osc is
         for i in 1 to count loop
             for c in 1 to cycles loop
                 m_clk <= '1';
-                wait for 125 ns;
+                wait for 62.5 ns;
                 assert m_output = expected report "oh" & INTEGER'IMAGE(i) & " " & INTEGER'IMAGE(c);
                 m_clk <= '0';
-                wait for 125 ns;
+                wait for 62.5 ns;
                 assert m_output = expected;
             end loop;
         end loop;
