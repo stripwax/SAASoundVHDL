@@ -113,7 +113,7 @@ begin
     variable selector : bit_vector(1 downto 0);
     variable data : std_logic_vector(7 downto 0);
     variable sample_ns : unsigned(127 downto 0) := (others => '0');
-    variable current_ns : unsigned(127 downto 0) := to_unsigned(69469*22675, 128); -- (others => '0');
+    variable current_ns : unsigned(127 downto 0) := (others => '0');
     variable ns_per_sample : unsigned(15 downto 0) := to_unsigned(22675, 16);
     begin
 
