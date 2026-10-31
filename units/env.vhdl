@@ -127,6 +127,8 @@ begin
             wav_inverted_val := wav_inverted;
             wav_repeat_val := wav_repeat;
 
+            next_counter := counter;
+
             if env_write then
                 env_wave_buffered <= env_wave;
                 env_wave_val := env_wave;
