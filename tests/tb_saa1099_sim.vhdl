@@ -161,25 +161,25 @@ begin
                 data := std_logic_vector(data_byte);
             end if;
             -- common:
-            clk <= '1';
-            wait for 10 ns;              -- cumulative: 20ns
+            clk <= '1';                 -- @0ns     :                                                           clk_cum: 0ns            TICK
+            wait for 20 ns;             -- @20ns    :  a0 fall to cs fall: 20ns                                 clk_cum: 20ns
             cs_n <= '0';
-            wait for 15 ns;              -- cumulative: 50ns
+            wait for 30 ns;             -- @50ns    :  a0 fall to wr fall: 50ns; cs fall to wr fall: 30ns       clk_cum: 50ns
             wr_n <= '0';
             d <= data;
-            wait for 37.5 ns;             -- cumulative: 125ns
+            wait for 12 ns;             -- @62ns    :                                                           clk_cum: 62ns  => 0   TOCK
             clk <= '0';
-            wait for 12.5 ns;             -- cumulative: 150ns
+            wait for 63 ns;             -- @125ns   :                                                           clk_cum: 63ns  => 0   TICK
+            clk <= '1';
+            wait for 25 ns;             -- @150ns   :  wr low time (100ns); cs hold from wr high (0)            clk_cum: 25ns
             wr_n <= '1';
             cs_n <= '1';
-            wait for 5 ns;             -- cumulative: 160ns
+            wait for 10 ns;             -- @160ns   :  a0 and data hold from wr high (0=>10)                    clk_cum: 35ns
             a0 <= 'X';
             d <= (others=>'X');
-            wait for 45 ns;             -- cumulative: 250ns
-            clk <= '1';
-            wait for 62.5 ns;            -- cumulative: 375ns
+            wait for 27 ns;             -- @187ns   :                                                           clk_cum: 62ns  => 0   TOCK
             clk <= '0';
-            wait for 62.5 ns;            -- cumulative: 500ns
+            wait for 63 ns;             -- @250ns   :
             current_ns := current_ns + to_unsigned(250, 10);
 
         end loop;
