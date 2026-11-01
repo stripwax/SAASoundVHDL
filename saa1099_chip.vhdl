@@ -39,18 +39,18 @@ architecture behaviour of saa1099_digital_output is
     signal amp3 : std_logic_vector(7 downto 0);
     signal amp4 : std_logic_vector(7 downto 0);
     signal amp5 : std_logic_vector(7 downto 0);
-    signal freq0 : std_logic_vector(7 downto 0);
-    signal freq1 : std_logic_vector(7 downto 0);
-    signal freq2 : std_logic_vector(7 downto 0);
-    signal freq3 : std_logic_vector(7 downto 0);
-    signal freq4 : std_logic_vector(7 downto 0);
-    signal freq5 : std_logic_vector(7 downto 0);
-    signal oct0 : std_logic_vector(2 downto 0);
-    signal oct1 : std_logic_vector(2 downto 0);
-    signal oct2 : std_logic_vector(2 downto 0);
-    signal oct3 : std_logic_vector(2 downto 0);
-    signal oct4 : std_logic_vector(2 downto 0);
-    signal oct5 : std_logic_vector(2 downto 0);
+    signal freq0 : std_logic_vector(7 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal freq1 : std_logic_vector(7 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal freq2 : std_logic_vector(7 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal freq3 : std_logic_vector(7 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal freq4 : std_logic_vector(7 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal freq5 : std_logic_vector(7 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal oct0 : std_logic_vector(2 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal oct1 : std_logic_vector(2 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal oct2 : std_logic_vector(2 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal oct3 : std_logic_vector(2 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal oct4 : std_logic_vector(2 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
+    signal oct5 : std_logic_vector(2 downto 0) := (others => '0'); -- SIMULATION ONLY, REMOVE LATER
     signal freq0_en : std_logic; -- frequency enable
     signal freq1_en : std_logic;
     signal freq2_en : std_logic;

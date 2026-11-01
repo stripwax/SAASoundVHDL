@@ -37,8 +37,8 @@ architecture behaviour of osc is
     -- we have a 9-bit counter , initialised with the value of the frequency register
     -- and counting up until all bits are set
     signal counter: unsigned(8 downto 0) := (others=>'0');
-    signal latched_octave: unsigned(2 downto 0);
-    signal latched_freq: unsigned(7 downto 0);
+    signal latched_octave: unsigned(2 downto 0) := (others=>'0'); -- REMOVE INIT?
+    signal latched_freq: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?
 begin
     process(clk)
         variable octave_clk_pulse: std_logic;
