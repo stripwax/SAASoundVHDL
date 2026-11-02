@@ -470,9 +470,9 @@ begin
     d_wr <= '1' when (write_active = '1' and a0_latch = '0') else '0';
 
     -- Combinatorial forwarding/bypass.  This unit only implements a few of the overall registers since the rest are delegated to the units themselves.
-    enable <= data_latch(0) when (write_active = '1' and reg_28_load_en='1') else reg_enable;
-    sync_rst <= data_latch(1) when (write_active = '1' and reg_28_load_en='1') else reg_sync_rst;
-    freq_en <= data_latch(5 downto 0) when (write_active = '1' and reg_20_load_en='1') else reg_freq_en;
-    noise_en <= data_latch(5 downto 0) when (write_active = '1' and reg_21_load_en='1') else reg_noise_en;
+    enable <= data_latch(0) when (d_wr = '1' and reg_28_load_en='1') else reg_enable;
+    sync_rst <= data_latch(1) when (d_wr = '1' and reg_28_load_en='1') else reg_sync_rst;
+    freq_en <= data_latch(5 downto 0) when (d_wr = '1' and reg_20_load_en='1') else reg_freq_en;
+    noise_en <= data_latch(5 downto 0) when (d_wr = '1' and reg_21_load_en='1') else reg_noise_en;
 
 end behaviour;
