@@ -108,7 +108,7 @@ begin
     variable sample_pos : unsigned(31 downto 0);
     variable data : std_logic_vector(7 downto 0);
     variable sample_ns : unsigned(127 downto 0) := (others => '0');
-    variable current_ns : unsigned(127 downto 0) := 0;
+    variable current_ns : unsigned(127 downto 0) := (others => '0');
     -- variable current_ns : unsigned(127 downto 0) := to_unsigned(602276, 64) * to_unsigned(22675, 64);  -- if you want to skip large chunks of silence/etc at start of debugsaa.txt .  The file is read and processed as normal but all the time up to this sample number is compressed and executed sequentially with no pause gaps in between.  this example means the first 602276 samples of debugsaa.txt are compressed into the init phase effectively skipping 13 seconds of silence.
     variable ns_per_sample : unsigned(15 downto 0) := to_unsigned(22675, 16);
     begin
