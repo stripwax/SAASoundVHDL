@@ -108,6 +108,7 @@ architecture behaviour of env is
     signal env_resolution : std_logic;
     signal env_lr : std_logic;
     signal env_clk_source : std_logic;
+    signal env_data_waiting_in_buffer : std_logic := '0';
 
 begin
     -- handle register writes
@@ -145,7 +146,7 @@ begin
         variable invert_value : std_logic;
         variable env_lr_val : std_logic;
         variable counter_output_val, wav_inverted_val, wav_repeat_val : std_logic;
-        variable env_has_written : std_logic;
+        variable env_data_waiting_in_buffer_val : std_logic;
     begin
 
         halted_val := halted;
@@ -155,15 +156,16 @@ begin
         env_lr_val := env_lr;
 
         next_counter := counter;
-        env_has_written := load_en;
+        env_data_waiting_in_buffer_val := load_en or env_data_waiting_in_buffer; -- data was previously in buffer from an earlier write, or a write this cycle
 
+        ctr_overflow := '0';
 
         if rising_edge(clk) then
-            if env_has_written then
+            if env_data_waiting_in_buffer_val then
                 halted_val := not env_en;
             end if;
 
-            trigger := (osc_pulse AND not env_clk_source_buffered) OR (a0_pulse AND env_clk_source_buffered);
+            trigger := (osc_pulse AND not env_clk_source) OR (a0_pulse AND env_clk_source);
             if (halted_val='0' and trigger='1') then
                 if env_resolution='0' then
                     -- 4 bit mode
@@ -171,15 +173,16 @@ begin
                 else
                     next_counter := counter-2;  -- based on my understanding that LSB is still actually preserved when the resolution is changed from 4 to 3 bits (easily confirmed by changing resolution back to 4 bits, in the SAME env wave cycle, there's a SAA test case for that in the .dsk)
                 end if;
+                next_effective_counter := (next_counter(4 downto 1)) & (next_counter(0) or env_resolution);
+                ctr_overflow := '1' when next_effective_counter="11111" else '0';
             end if;
-            next_effective_counter := (next_counter(4 downto 1)) & (next_counter(0) or env_resolution);
-            ctr_overflow := '1' when next_effective_counter="11111" else '0';
-            if (not halted and not env_has_written) and ctr_overflow and not wav_repeat then
+            
+            if (not halted and not env_data_waiting_in_buffer_val) and ctr_overflow and not wav_repeat then
                 -- position (3) in the datasheet env waveform diagrams, when no write has been actioned: waveform end.
                 -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
                 next_counter := "00000";
                 halted_val := '1';
-            elsif ((halted and env_has_written) or (ctr_overflow and (wav_repeat or env_has_written))) then
+            elsif ((halted and env_data_waiting_in_buffer_val) or (ctr_overflow and wav_repeat)) then
                 -- process new env instruction here.
                 -- this corresponds to position(3) when a write has been actioned this clock,
                 -- and position(4) both if write has or has not been actioned this clock.
@@ -199,6 +202,8 @@ begin
                 next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
                 -- and, not halted:
                 halted_val := '0';
+                -- and no data in buffer now
+                env_data_waiting_in_buffer_val := '0';
             end if;
 
             if halted_val then
@@ -223,6 +228,7 @@ begin
             
             counter <= next_counter;
             halted <= halted_val;
+            env_data_waiting_in_buffer <= env_data_waiting_in_buffer_val;
 
         end if;
 
