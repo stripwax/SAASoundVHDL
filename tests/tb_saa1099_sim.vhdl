@@ -180,7 +180,15 @@ begin
             wait for 27 ns;             -- @187ns   :                                                           clk_cum: 62ns  => 0   TOCK
             clk <= '0';
             wait for 63 ns;             -- @250ns   :
-            current_ns := current_ns + to_unsigned(250, 10);
+            clk <= '1';
+            wait for 62 ns;             -- @312ns   :
+            clk <= '0';
+            wait for 63 ns;             -- @375ns   :
+            clk <= '1';
+            wait for 62 ns;             -- @537ns   :
+            clk <= '0';
+            wait for 63 ns;             -- @500ns   :
+            current_ns := current_ns + to_unsigned(500, 10);
 
         end loop;
         
