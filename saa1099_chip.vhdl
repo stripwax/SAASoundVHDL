@@ -130,7 +130,7 @@ begin
         );
 
     OSC0: entity work.osc
-        generic map (oct_in_upper => false, freq_reg => 8, oct_reg => 16)
+        generic map (MAPPED_FREQ_REGISTER => 8, MAPPED_OCT_REGISTER => 16, OCT_IN_UPPER => false)
         port map (
             clk => clk,
             data => d,
@@ -143,7 +143,7 @@ begin
         );
 
     OSC1: entity work.osc
-        generic map (oct_in_upper => true, freq_reg => 9, oct_reg => 16)
+        generic map (MAPPED_FREQ_REGISTER => 9, MAPPED_OCT_REGISTER => 16, OCT_IN_UPPER => true)
         port map (
             clk => clk,
             data => d,
@@ -156,7 +156,7 @@ begin
         );
 
     OSC2: entity work.osc
-        generic map (oct_in_upper => false, freq_reg => 10, oct_reg => 17)
+        generic map (MAPPED_FREQ_REGISTER => 10, MAPPED_OCT_REGISTER => 17, OCT_IN_UPPER => false)
         port map (
             clk => clk,
             data => d,
@@ -169,7 +169,7 @@ begin
         );
 
     OSC3: entity work.osc
-        generic map (oct_in_upper => true, freq_reg => 11, oct_reg => 17)
+        generic map (MAPPED_FREQ_REGISTER => 11, MAPPED_OCT_REGISTER => 17, OCT_IN_UPPER => true)
         port map (
             clk => clk,
             data => d,
@@ -182,7 +182,7 @@ begin
         );
 
     OSC4: entity work.osc
-        generic map (oct_in_upper => false, freq_reg => 12, oct_reg => 18)
+        generic map (MAPPED_FREQ_REGISTER => 12, MAPPED_OCT_REGISTER => 18, OCT_IN_UPPER => false)
         port map (
             clk => clk,
             data => d,
@@ -195,7 +195,7 @@ begin
         );
 
     OSC5: entity work.osc
-        generic map (oct_in_upper => true, freq_reg => 13, oct_reg => 18)
+        generic map (MAPPED_FREQ_REGISTER => 13, MAPPED_OCT_REGISTER => 18, OCT_IN_UPPER => true)
         port map (
             clk => clk,
             data => d,
@@ -208,7 +208,7 @@ begin
         );
 
     NOISE0: entity work.noise_bitstream
-        generic map (sel_in_upper => false, sel_reg => 28)
+        generic map (MAPPED_SEL_REGISTER => 20, SEL_IN_UPPER => false)
         port map (
             clk => clk,
             data => d,
@@ -218,12 +218,11 @@ begin
             trigger_156 => noise_clks(1),
             trigger_76 => noise_clks(2),
             trigger_osc => osc0_trigger,
-            enabled => noise0_sel,
             bitstream => noise0_output
         );
 
     NOISE1: entity work.noise_bitstream
-        generic map (sel_in_upper => true, sel_reg => 28)
+        generic map (MAPPED_SEL_REGISTER => 20, SEL_IN_UPPER => true)
         port map (
             clk => clk,
             data => d,
@@ -233,7 +232,6 @@ begin
             trigger_156 => noise_clks(1),
             trigger_76 => noise_clks(2),
             trigger_osc => osc3_trigger,
-            enabled => noise1_sel,
             bitstream => noise1_output
         );
 

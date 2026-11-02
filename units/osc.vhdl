@@ -19,50 +19,67 @@ use IEEE.STD_LOGIC_1164.all;
 use IEEE.NUMERIC_STD.all;
 
 entity osc is
-  -- square wave oscillator output with frequency & octave control inputs
-  -- and count-zero trigger output
-  generic (
-    oct_in_upper : boolean := false
-  );
-  port (
-    clk: in std_logic;
-    octave_clks: in std_logic_vector(7 downto 0);
-    sync: in std_logic;
-    data: in std_logic_vector(7 downto 0);
-    freq_wr: in std_logic;
-    octave_wr: in std_logic;
-    output: out std_logic := '0';
-    trigger: out std_logic
+    -- square wave oscillator output with frequency & octave control inputs
+    -- and count-zero trigger output
+    generic (
+        MAPPED_FREQ_REGISTER: integer;
+        MAPPED_OCT_REGISTER: integer;
+        OCT_IN_UPPER : boolean := false
+    );
+    port (
+        clk: in std_logic;
+        data: in std_logic_vector(7 downto 0);
+        reg : in std_logic_vector(4 downto 0);
+        wr : in std_logic;
+        octave_clks: in std_logic_vector(7 downto 0);
+        sync: in std_logic;
+        output: out std_logic := '0';
+        trigger: out std_logic
     );
 end osc;
 
 architecture behaviour of osc is
+
+    signal freq_load_en, oct_load_en: std_logic;
+    signal reg_octave: unsigned(2 downto 0) := (others=>'0'); -- REMOVE INIT?
+    signal reg_frequency: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?;
+
+    signal octave: unsigned(2 downto 0);
+    signal frequency: unsigned(7 downto 0);
+
     -- we have a 9-bit counter , initialised with the value of the frequency register
     -- and counting up until all bits are set
     signal counter: unsigned(8 downto 0) := (others=>'0');
-    signal reg_octave: unsigned(2 downto 0) := (others=>'0'); -- REMOVE INIT?
     signal latched_octave: unsigned(2 downto 0) := (others=>'0'); -- REMOVE INIT?;
-    signal reg_frequency: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?;
     signal latched_freq: unsigned(7 downto 0) := (others=>'0'); -- REMOVE INIT?;
 begin
 
-    decode_freq: process(freq_wr) -- this is wrong because this is the clocked pulse not the async reg wr.  I might just put frequency and octave reg back in saa1099 chip?  although it probably works anyway.  check?
-    begin
-        if rising_edge(freq_wr) then
-            reg_frequency <= unsigned(data);
-        end if;
-    end process;
+    -- handle register writes
+    freq_load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_FREQ_REGISTER) else '0';
+    oct_load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_OCT_REGISTER) else '0';
 
-    decode_octave: process(octave_wr)
-    begin
-        if rising_edge(octave_wr) then
-            if oct_in_upper then
-                reg_octave <= unsigned(data(6 downto 4));
-            else
-                reg_octave <= unsigned(data(2 downto 0));
+    sync_register_load : process(clk)
+    begin   
+        if rising_edge(clk) then
+            if freq_load_en = '1' then
+                reg_frequency <= unsigned(data);
+            end if;
+            if oct_load_en = '1' then
+                if OCT_IN_UPPER then
+                    reg_octave <= unsigned(data(6 downto 4));
+                else
+                    reg_octave <= unsigned(data(2 downto 0));
+                end if;
             end if;
         end if;
     end process;
+
+    -- Combinatorial forwarding/bypass
+    octave <= unsigned(data(6 downto 4)) when (oct_load_en ='1' and OCT_IN_UPPER=true) else
+              unsigned(data(2 downto 0)) when (oct_load_en ='1' and OCT_IN_UPPER=false) else
+              reg_octave;
+    frequency <= unsigned(data) when freq_load_en = '1' else reg_frequency;
+
 
     seq: process(clk)
         variable octave_clk_pulse: std_logic;
@@ -78,8 +95,8 @@ begin
             -- writing to octave register triggers a copy (latch) of the frequency register
             -- which enables the next period to set the octave and frequency at the same time (no glitch)
             -- setting frequency after that will be ignored until the next half cycle
-            if octave_wr='1' or sync='1' then  -- (yes, this octave_wr should be the clocked pulse. which is only high if the freq has just been written to since the last clock pulse)
-                latched_freq <= reg_frequency;
+            if oct_load_en='1' or sync='1' then
+                latched_freq <= frequency;
             end if;
 
             trigger <= '0'; -- assume not triggered, but clauses below will pulse this as required
@@ -112,8 +129,8 @@ begin
             end if;
 
             if load='1' then
-                latched_freq <= reg_frequency;
-                latched_octave <= reg_octave;
+                latched_freq <= frequency;
+                latched_octave <= octave;
             end if;
 
         end if;
