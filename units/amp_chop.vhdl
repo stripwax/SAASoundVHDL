@@ -24,55 +24,81 @@ entity amp_chop is
     -- well documented in docs section.
     -- question: does every channel use the same masking patterns?  in other words, are the channels masking patterns synchronised
     --           to the same step counter, or could they be offset/flipped for different channels?
+    --           [CONFIRMED: YES]
     --           test case: try enabling multiple channels with synchronised osc and changing osc levels
     --           test case: try setting 'DAC' mode (env enabled, osc mixer disabled) and changing osc levels AND env leves
+    generic (
+        MAPPED_REGISTER : std_logic_vector(4 downto 0)
+    );
     port(
+        clk: in std_logic;
+        reg: in std_logic_vector(4 downto 0);
+        data: in std_logic_vector(7 downto 0);
+        wr: in std_logic;
         step_ctr: in unsigned(5 downto 0);
         input: in std_logic;
         envelope_enabled: in std_logic;
-        amplitude_l: in unsigned(3 downto 0);
-        amplitude_r: in unsigned(3 downto 0);
         output_l: out std_logic;
         output_r: out std_logic
     );
 end entity;
 
 architecture behaviour of amp_chop is
+        signal load_en: std_logic;
+        signal amplitude_l, amplitude_r: unsigned(3 downto 0);
+        signal reg_amplitude_l, reg_amplitude_r: unsigned(3 downto 0);
         signal A_l, A_r: unsigned(3 downto 0);
         signal C: unsigned(5 downto 0);
         signal amp_step_0_3_l, amp_step_4_7_l, amp_step_8_15_l, amp_step_16_31_48_63_l, amp_step_32_47_l: std_logic;
         signal amp_step_0_3_r, amp_step_4_7_r, amp_step_8_15_r, amp_step_16_31_48_63_r, amp_step_32_47_r: std_logic;
         signal chop_mask_l, chop_mask_r: std_logic;
 begin
+    -- handle register writes
+    load_en <= '1' when (wr = '1' and reg = MAPPED_REGISTER) else '0';
 
-        C <= step_ctr;
+    sync_register_load : process(clk)
+    begin   
+        if rising_edge(clk) then
+            if load_en = '1' then
+                reg_amplitude_l <= unsigned(data(3 downto 0));
+                reg_amplitude_r <= unsigned(data(7 downto 4));
+            end if;
+        end if;
+    end process;
 
-        A_l(3) <= amplitude_l(3);
-        A_l(2) <= amplitude_l(2);
-        A_l(1) <= amplitude_l(1);
-        A_l(0) <= amplitude_l(0) and not envelope_enabled; -- I still cannot understand the logic behind this behaviour
+    -- Combinatorial forwarding/bypass
+    amplitude_l <= unsigned(data(3 downto 0)) when load_en = '1' else reg_amplitude_l;
+    amplitude_r <= unsigned(data(7 downto 4)) when load_en = '1' else reg_amplitude_r;
 
-        amp_step_0_3_l <= '0';
-        amp_step_4_7_l <= A_l(0) AND C(2) AND NOT (C(3) OR C(4) OR C(5));
-        amp_step_8_15_l <= A_l(1) AND C(3) AND NOT (C(4) OR C(5));
-        amp_step_16_31_48_63_l <= A_l(3) AND C(4);
-        amp_step_32_47_l <= A_l(2) AND C(5) AND NOT C(4);
+    -- combinatoric outputs:
+    C <= step_ctr;
 
-        chop_mask_l <= (amp_step_0_3_l OR amp_step_4_7_l OR amp_step_8_15_l OR amp_step_16_31_48_63_l OR amp_step_32_47_l);
+    A_l(3) <= amplitude_l(3);
+    A_l(2) <= amplitude_l(2);
+    A_l(1) <= amplitude_l(1);
+    A_l(0) <= amplitude_l(0) and not envelope_enabled; -- I still cannot understand the logic behind this behaviour
 
-        A_r(3) <= amplitude_r(3);
-        A_r(2) <= amplitude_r(2);
-        A_r(1) <= amplitude_r(1);
-        A_r(0) <= amplitude_r(0) and not envelope_enabled; -- I still cannot understand the logic behind this behaviour
+    amp_step_0_3_l <= '0';
+    amp_step_4_7_l <= A_l(0) AND C(2) AND NOT (C(3) OR C(4) OR C(5));
+    amp_step_8_15_l <= A_l(1) AND C(3) AND NOT (C(4) OR C(5));
+    amp_step_16_31_48_63_l <= A_l(3) AND C(4);
+    amp_step_32_47_l <= A_l(2) AND C(5) AND NOT C(4);
 
-        amp_step_0_3_r <= '0';
-        amp_step_4_7_r <= A_r(0) AND C(2) AND NOT (C(3) OR C(4) OR C(5));
-        amp_step_8_15_r <= A_r(1) AND C(3) AND NOT (C(4) OR C(5));
-        amp_step_16_31_48_63_r <= A_r(3) AND C(4);
-        amp_step_32_47_r <= A_r(2) AND C(5) AND NOT C(4);
+    chop_mask_l <= (amp_step_0_3_l OR amp_step_4_7_l OR amp_step_8_15_l OR amp_step_16_31_48_63_l OR amp_step_32_47_l);
 
-        chop_mask_r <= (amp_step_0_3_r OR amp_step_4_7_r OR amp_step_8_15_r OR amp_step_16_31_48_63_r OR amp_step_32_47_r);
-        output_l <= input and chop_mask_l;
-        output_r <= input and chop_mask_r;
+    A_r(3) <= amplitude_r(3);
+    A_r(2) <= amplitude_r(2);
+    A_r(1) <= amplitude_r(1);
+    A_r(0) <= amplitude_r(0) and not envelope_enabled; -- I still cannot understand the logic behind this behaviour
+
+    amp_step_0_3_r <= '0';
+    amp_step_4_7_r <= A_r(0) AND C(2) AND NOT (C(3) OR C(4) OR C(5));
+    amp_step_8_15_r <= A_r(1) AND C(3) AND NOT (C(4) OR C(5));
+    amp_step_16_31_48_63_r <= A_r(3) AND C(4);
+    amp_step_32_47_r <= A_r(2) AND C(5) AND NOT C(4);
+
+    chop_mask_r <= (amp_step_0_3_r OR amp_step_4_7_r OR amp_step_8_15_r OR amp_step_16_31_48_63_r OR amp_step_32_47_r);
+    output_l <= input and chop_mask_l;
+    output_r <= input and chop_mask_r;
 
 end behaviour;
