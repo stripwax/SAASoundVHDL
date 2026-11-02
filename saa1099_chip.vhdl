@@ -32,7 +32,15 @@ entity saa1099_digital_output is
 end saa1099_digital_output;
 
 architecture behaviour of saa1099_digital_output is
+    signal data_latch : std_logic_vector(7 downto 0);
+    signal a0_latch : std_logic;
+    signal wr_pending : std_logic;
+    signal clear_pending : std_logic := '0';
+    signal wr_pending_sync : std_logic_vector(1 downto 0);
     signal reg : std_logic_vector(4 downto 0);
+
+    signal write_active : std_logic;
+
     signal amp0 : std_logic_vector(7 downto 0);
     signal amp1 : std_logic_vector(7 downto 0);
     signal amp2 : std_logic_vector(7 downto 0);
@@ -63,10 +71,12 @@ architecture behaviour of saa1099_digital_output is
     signal env1_res : std_logic := '0'; -- SIMULATION ONLY, REMOVE LATER
     signal env1_clk_source : std_logic;
     signal env1_en : std_logic := '0'; -- SIMULATION ONLY, REMOVE LATER
-    signal sync_rst : std_logic;
-    signal enable : std_logic := '0';
+    signal reg_28_load_en : std_logic; -- this unit only implements register 28, the rest are forwarded to the other units
+    signal enable, sync_rst : std_logic;
+    signal reg_enable : std_logic := '0';
+    signal reg_sync_rst : std_logic;
 
-    signal a0_pulse, a0_wr, a0_wr_prev: std_logic;
+    signal a0_wr, d_wr: std_logic;
 
     signal osc0_output: std_logic;
     signal osc0_trigger: std_logic;
@@ -90,6 +100,8 @@ architecture behaviour of saa1099_digital_output is
     signal env0_wr, env1_wr : std_logic;
     signal env0_wr_prev, env1_wr_prev : std_logic;
     signal env0_wr_pulse, env1_wr_pulse : std_logic;
+    signal amp0_wr, amp1_wr, amp2_wr, amp3_wr, amp4_wr, amp5_wr : std_logic;
+    signal noise_sel_wr : std_logic;
 
     signal noise0_output, noise1_output : std_logic;
     signal noise_clks : std_logic_vector(2 downto 0);
@@ -118,86 +130,90 @@ begin
         );
 
     OSC0: entity work.osc
-        generic map (oct_in_upper => false)
+        generic map (oct_in_upper => false, freq_reg => 8, oct_reg => 16)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
-            data => d,
-            freq_wr => freq0_wr_pulse,
-            octave_wr => oct01_wr_pulse,
             output => osc0_output,
             trigger => osc0_trigger
         );
 
     OSC1: entity work.osc
-        generic map (oct_in_upper => true)
+        generic map (oct_in_upper => true, freq_reg => 9, oct_reg => 16)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
-            data => d,
-            freq_wr => freq1_wr_pulse,
-            octave_wr => oct01_wr_pulse,
             output => osc1_output,
             trigger => osc1_trigger
         );
 
     OSC2: entity work.osc
-        generic map (oct_in_upper => false)
+        generic map (oct_in_upper => false, freq_reg => 10, oct_reg => 17)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
-            data => d,
-            freq_wr => freq2_wr_pulse,
-            octave_wr => oct23_wr_pulse,
             output => osc2_output,
             trigger => osc2_trigger
         );
 
     OSC3: entity work.osc
-        generic map (oct_in_upper => true)
+        generic map (oct_in_upper => true, freq_reg => 11, oct_reg => 17)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
-            data => d,
-            freq_wr => freq3_wr_pulse,
-            octave_wr => oct23_wr_pulse,
             output => osc3_output,
             trigger => osc3_trigger
         );
 
     OSC4: entity work.osc
-        generic map (oct_in_upper => false)
+        generic map (oct_in_upper => false, freq_reg => 12, oct_reg => 18)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
-            data => d,
-            freq_wr => freq4_wr_pulse,
-            octave_wr => oct45_wr_pulse,
             output => osc4_output,
             trigger => osc4_trigger
         );
 
     OSC5: entity work.osc
-        generic map (oct_in_upper => true)
+        generic map (oct_in_upper => true, freq_reg => 13, oct_reg => 18)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
-            data => d,
-            freq_wr => freq5_wr_pulse,
-            octave_wr => oct45_wr_pulse,
             output => osc5_output,
             trigger => osc5_trigger
         );
 
     NOISE0: entity work.noise_bitstream
+        generic map (sel_in_upper => false, sel_reg => 28)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             trigger_313 => noise_clks(0),
             trigger_156 => noise_clks(1),
             trigger_76 => noise_clks(2),
@@ -207,8 +223,12 @@ begin
         );
 
     NOISE1: entity work.noise_bitstream
+        generic map (sel_in_upper => true, sel_reg => 28)
         port map (
             clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             trigger_313 => noise_clks(0),
             trigger_156 => noise_clks(1),
             trigger_76 => noise_clks(2),
@@ -217,6 +237,7 @@ begin
             bitstream => noise1_output
         );
 
+    -- mixer is purely combinatoric
     MIXER0 : entity work.mixer
         port map (
             noise_enable => noise0_en,
@@ -279,60 +300,67 @@ begin
 
     AMP_0: entity work.amp_chop
         port map (
+            data => d,
+            reg => reg,
+            wr => d_wr,
             step_ctr => step_ctr,
             input => mixer0_out,
-            amplitude_l => unsigned(amp0(3 downto 0)),
-            amplitude_r => unsigned(amp0(7 downto 4)),
             envelope_enabled => '0',
             output_l => amp0l_out,
             output_r => amp0r_out
         );
     AMP_1: entity work.amp_chop
         port map (
+            data => d,
+            reg => reg,
+            wr => d_wr,
             step_ctr => step_ctr,
             input => mixer1_out,
-            amplitude_l => unsigned(amp1(3 downto 0)),
-            amplitude_r => unsigned(amp1(7 downto 4)),
             envelope_enabled => '0',
             output_l => amp1l_out,
             output_r => amp1r_out
         );
     AMP_2: entity work.amp_chop
         port map (
+            data => d,
+            reg => reg,
+            wr => d_wr,
             step_ctr => step_ctr,
             input => mixer2_out,
-            amplitude_l => unsigned(amp2(3 downto 0)),
-            amplitude_r => unsigned(amp2(7 downto 4)),
             envelope_enabled => env0_en,
             output_l => amp2l_out,
             output_r => amp2r_out
         );
     AMP_3: entity work.amp_chop
         port map (
+            data => d,
+            reg => reg,
+            wr => d_wr,
             step_ctr => step_ctr,
             input => mixer3_out,
-            amplitude_l => unsigned(amp3(3 downto 0)),
-            amplitude_r => unsigned(amp3(7 downto 4)),
             envelope_enabled => '0',
             output_l => amp3l_out,
             output_r => amp3r_out
         );
     AMP_4: entity work.amp_chop
         port map (
+            data => d,
+            reg => reg,
+            wr => d_wr,
             step_ctr => step_ctr,
             input => mixer4_out,
-            amplitude_l => unsigned(amp4(3 downto 0)),
-            amplitude_r => unsigned(amp4(7 downto 4)),
             envelope_enabled => '0',
             output_l => amp4l_out,
             output_r => amp4r_out
         );
     AMP_5: entity work.amp_chop
         port map (
+            clk => clk,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             step_ctr => step_ctr,
             input => mixer5_out,
-            amplitude_l => unsigned(amp5(3 downto 0)),
-            amplitude_r => unsigned(amp5(7 downto 4)),
             envelope_enabled => env1_en,
             output_l => amp5l_out,
             output_r => amp5r_out
@@ -341,18 +369,17 @@ begin
     ENV0 : entity work.env
         port map (
             clk => clk,
-            env_write => env0_wr_pulse,
-            env_lr => env0_lr,
-            env_wave => env0_wave,
-            env_res => env0_res,
-            env_clk_source => env0_clk_source,
-            env_en => env0_en,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             osc_pulse => osc1_trigger,
-            a0_pulse => a0_pulse,
+            a0_pulse => a0_wr,
             output_left => env0l_level_out,
-            output_right => env0r_level_out
+            output_right => env0r_level_out,
+            env_en => env0_en -- output from unit
         );
 
+    -- env chop is purely combinatoric
     ENV_CHOP0 : entity work.env_chop
         port map (
             step_ctr => step_ctr,
@@ -368,18 +395,17 @@ begin
     ENV1 : entity work.env
         port map (
             clk => clk,
-            env_write => env1_wr_pulse,
-            env_lr => env1_lr,
-            env_wave => env1_wave,
-            env_res => env1_res,
-            env_clk_source => env1_clk_source,
-            env_en => env1_en,
+            data => d,
+            reg => reg,
+            wr => d_wr,
             osc_pulse => osc4_trigger,
-            a0_pulse => a0_pulse,
+            a0_pulse => a0_wr,
             output_left => env1l_level_out,
-            output_right => env1r_level_out
+            output_right => env1r_level_out,
+            env_en => env0_en -- output from unit
         );
 
+    -- env chop is purely combinatoric
     ENV_CHOP1 : entity work.env_chop
         port map (
             step_ctr => step_ctr,
@@ -411,147 +437,59 @@ begin
     -- detect rising edge on wr (with cs still asserted) and/or cs (with wr still asserted)
     wr_edge <= (wr_n or cs_n);
 
-    -- output pulse if write occured with a0='1' (i.e. a write that sets the register as opposed to a write that sets the data)
-    a0_pulse <= (a0_wr and not a0_wr_prev);
-
-    -- output pulses related to specific register writes
-    env0_wr_pulse <= (env0_wr and not env0_wr_prev);
-    env1_wr_pulse <= (env1_wr and not env1_wr_prev);
-    oct01_wr_pulse <= (oct01_wr and not oct01_wr_prev);
-    oct23_wr_pulse <= (oct23_wr and not oct23_wr_prev);
-    oct45_wr_pulse <= (oct45_wr and not oct45_wr_prev);
-    freq0_wr_pulse <= (freq0_wr and not freq0_wr_prev);
-    freq1_wr_pulse <= (freq1_wr and not freq1_wr_prev);
-    freq2_wr_pulse <= (freq2_wr and not freq2_wr_prev);
-    freq3_wr_pulse <= (freq3_wr and not freq3_wr_prev);
-    freq4_wr_pulse <= (freq4_wr and not freq4_wr_prev);
-    freq5_wr_pulse <= (freq5_wr and not freq5_wr_prev);
-
-    com: process (wr_edge)
+    -- handle async bus writes and latch the incoming data and address line.
+    -- we pipeline the "write" event via wr_pending/clear_pending and a two-stage buffer (wr_pending_sync)
+    -- the buffer is shifted in the sequential logic to sample the write event and eliminate metastability
+    async_bus_write : process(wr_edge, clear_pending)
     begin
-        -- write cycle completes when wr is deasserted, and the clock in which this occurs
-        -- is what drives the a0_pulse and/or env[01]_wr
+        if clear_pending = '1' then
+            wr_pending <= '0';
+        elsif rising_edge(wr_edge) then
+            data_latch <= d;
+            a0_latch <= a0;
+            wr_pending <= '1';
+        end if;
+    end process async_bus_write;
 
-        -- we need to track if this was an 'address' write, and if so send a pulse to the envelope generators
-        a0_wr <= '0';
+    reg_28_load_en <= '1' when (reg(4 downto 0) = "11100") else '0';
 
-        -- we need to track if envelope registers were written to, since this is a trigger for the env gen
-        -- to reset waveform (see datasheet re position "3") as well as latch incoming new data
-        env0_wr <= '0';
-        env1_wr <= '0';
+    sync_register_load : process(clk)
+    begin
+        if rising_edge(clk) then
+            wr_pending_sync <= wr_pending_sync(0) & wr_pending;
+            clear_pending   <= '0';
 
-        -- we need to track if octave registers were written to, since this is a trigger for the oscillator
-        -- to also capture the freq registers at the same time
-        oct01_wr <= '0';
-        oct23_wr <= '0';
-        oct45_wr <= '0';
-        -- for freq register, the register is implemented on the osc entity so we need to decode that and pass it over
-        freq0_wr <= '0';
-        freq1_wr <= '0';
-        freq2_wr <= '0';
-        freq3_wr <= '0';
-        freq4_wr <= '0';
-        freq5_wr <= '0';
+            if wr_pending_sync(1) = '1' and clear_pending = '0' then
 
-        if rising_edge(wr_edge) then
+                clear_pending <= '1';
 
-            if a0='1' then
-                -- a0 is high (i.e. register write)
-                reg <= d(4 downto 0); -- higher bits unused; register file repeats according to datasheet
-                -- set a0_pulse for one cycle (triggers for env if configured that way)
-                a0_wr <= '1';
-            else
-                -- amplitude register; need to consider wait states
-                if reg(4 downto 0) = "00000" then
-                    amp0 <= d;
-                elsif reg(4 downto 0) = "00001" then
-                    amp1 <= d;
-                elsif reg(4 downto 0) = "00010" then
-                    amp2 <= d;
-                elsif reg(4 downto 0) = "00011" then
-                    amp3 <= d;
-                elsif reg(4 downto 0) = "00100" then
-                    amp4 <= d;
-                elsif reg(4 downto 0) = "00101" then
-                    amp5 <= d;
-                -- freq register
-                elsif reg(4 downto 0) = "01000" then
-                    freq0_wr <= '1';
-                elsif reg(4 downto 0) = "01001" then
-                    freq1_wr <= '1';
-                elsif reg(4 downto 0) = "01010" then
-                    freq2_wr <= '1';
-                elsif reg(4 downto 0) = "01011" then
-                    freq3_wr <= '1';
-                elsif reg(4 downto 0) = "01100" then
-                    freq4_wr <= '1';
-                elsif reg(4 downto 0) = "01101" then
-                    freq5_wr <= '1';
-                elsif reg(4 downto 0) = "10000" then
-                    -- oct0 and 1 register
-                    oct01_wr <= '1';
-                elsif reg(4 downto 0) = "10001" then
-                    -- oct2 and 3 register
-                    oct23_wr <= '1';
-                elsif reg(4 downto 0) = "10010" then
-                    -- oct4 and 5 register
-                    oct45_wr <= '1';
-                elsif reg(4 downto 0) = "10100" then
-                    freq0_en <= d(0);
-                    freq1_en <= d(1);
-                    freq2_en <= d(2);
-                    freq3_en <= d(3);
-                    freq4_en <= d(4);
-                    freq5_en <= d(5);
-                elsif reg(4 downto 0) = "10101" then
-                    noise0_en <= d(0);
-                    noise1_en <= d(1);
-                    noise2_en <= d(2);
-                    noise3_en <= d(3);
-                    noise4_en <= d(4);
-                    noise5_en <= d(5);
-                elsif reg(4 downto 0) = "10110" then
-                    noise0_sel <= d(1 downto 0);
-                    noise1_sel <= d(5 downto 4);
-                elsif reg(4 downto 0) = "11000" then
-                    env0_lr <= d(0);
-                    env0_wave(2 downto 0) <= d(3 downto 1);
-                    env0_res <= d(4);
-                    env0_clk_source <= d(5);
-                    env0_en <= d(7);
-                    env0_wr <= '1';
-                elsif reg(4 downto 0) = "11001" then
-                    env1_lr <= d(0);
-                    env1_wave(2 downto 0) <= d(3 downto 1);
-                    env1_res <= d(4);
-                    env1_clk_source <= d(5);
-                    env1_en <= d(7);
-                    env1_wr <= '1';
-                elsif reg(4 downto 0) = "11100" then
-                    enable <= d(0);
-                    sync_rst <= d(1);
+                if a0_latch='1' then
+                    -- a0 is high (i.e. register write)
+                    reg <= data_latch(4 downto 0); -- higher bits unused; register file repeats according to datasheet
                 else
-                    -- unused
+                    -- write data value to register.  This unit only implements register 28, the rest are delegated to the other units
+                    if reg_28_load_en='1' then
+                        reg_enable <= d(0);
+                        reg_sync_rst <= d(1);
+                    end if;
                 end if;
             end if;
         end if;
+    end process sync_register_load;
 
-    end process com;
+    -- write_active is a signal we set high during the clock cycle that the sequential state 
+    -- machine decides to process the write. This is so that connected units can act on the same written data
+    -- in the same clock cycle, rather than one cycle later.
+    write_active <= '1' when (wr_pending_sync(1) = '1' and clear_pending = '0') else '0';
 
-    seq: process (clk)
-    begin
-        a0_wr_prev <= a0_wr;
-        env0_wr_prev <= env0_wr;
-        env1_wr_prev <= env1_wr;
-        oct01_wr_prev <= oct01_wr;
-        oct23_wr_prev <= oct23_wr;
-        oct45_wr_prev <= oct45_wr;
-        freq0_wr_prev <= freq0_wr;
-        freq1_wr_prev <= freq1_wr;
-        freq2_wr_prev <= freq2_wr;
-        freq3_wr_prev <= freq3_wr;
-        freq4_wr_prev <= freq4_wr;
-        freq5_wr_prev <= freq5_wr;
-    end process seq;
+    -- The clock in which this occurs is what drives the a0_pulse, and the various 'load_en' signals for the registers embedded in the units.
+    -- Only this topmost unit has visibility of a0 so we compute the a0_wr pulse here
+    -- Similarly we compute a d_wr pulse (data write) here too, for the 'load_en' signals.
+    a0_wr <= '1' when (write_active = '1' and a0_latch = '1') else '0';
+    d_wr <= '1' when (write_active = '1' and a0_latch = '0') else '0';
+
+    -- Combinatorial forwarding/bypass.  This unit only implements enable and sync_rst registers.
+    enable <= data_latch(0) when (write_active = '1' and reg_28_load_en='1') else reg_enable;
+    sync_rst <= data_latch(1) when (write_active = '1' and reg_28_load_en='1') else reg_sync_rst;
 
 end behaviour;
