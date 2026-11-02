@@ -451,6 +451,11 @@ begin
         end if;
     end process async_bus_write;
 
+    -- write_active is a signal we set high during the clock cycle that the sequential state 
+    -- machine decides to process the write. This is so that connected units can act on the same written data
+    -- in the same clock cycle, rather than one cycle later.
+    write_active <= '1' when (wr_pending_sync(1) = '1' and clear_pending = '0') else '0';
+
     reg_28_load_en <= '1' when (reg(4 downto 0) = "11100") else '0';
 
     sync_register_load : process(clk)
@@ -459,7 +464,7 @@ begin
             wr_pending_sync <= wr_pending_sync(0) & wr_pending;
             clear_pending   <= '0';
 
-            if wr_pending_sync(1) = '1' and clear_pending = '0' then
+            if write_active then
 
                 clear_pending <= '1';
 
@@ -476,11 +481,6 @@ begin
             end if;
         end if;
     end process sync_register_load;
-
-    -- write_active is a signal we set high during the clock cycle that the sequential state 
-    -- machine decides to process the write. This is so that connected units can act on the same written data
-    -- in the same clock cycle, rather than one cycle later.
-    write_active <= '1' when (wr_pending_sync(1) = '1' and clear_pending = '0') else '0';
 
     -- The clock in which this occurs is what drives the a0_pulse, and the various 'load_en' signals for the registers embedded in the units.
     -- Only this topmost unit has visibility of a0 so we compute the a0_wr pulse here
