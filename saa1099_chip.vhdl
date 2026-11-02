@@ -32,43 +32,28 @@ entity saa1099_digital_output is
 end saa1099_digital_output;
 
 architecture behaviour of saa1099_digital_output is
+    -- state machine for bus writes
     signal data_latch : std_logic_vector(7 downto 0);
     signal a0_latch : std_logic;
     signal wr_pending : std_logic;
     signal clear_pending : std_logic := '0';
     signal wr_pending_sync : std_logic_vector(1 downto 0);
     signal reg : std_logic_vector(4 downto 0);
-
     signal write_active : std_logic;
 
-    signal freq0_en : std_logic; -- frequency enable
-    signal freq1_en : std_logic;
-    signal freq2_en : std_logic;
-    signal freq3_en : std_logic;
-    signal freq4_en : std_logic;
-    signal freq5_en : std_logic;
-    signal noise0_en : std_logic; -- noise enable
-    signal noise1_en : std_logic;
-    signal noise2_en : std_logic;
-    signal noise3_en : std_logic;
-    signal noise4_en : std_logic;
-    signal noise5_en : std_logic;
-    signal noise0_sel : std_logic_vector(1 downto 0);
-    signal noise1_sel : std_logic_vector(1 downto 0);
-    signal env0_lr : std_logic;
-    signal env0_wave : std_logic_vector(2 downto 0);
-    signal env0_res : std_logic := '0'; -- SIMULATION ONLY, REMOVE LATER
-    signal env0_clk_source : std_logic;
-    signal env0_en : std_logic := '0'; -- SIMULATION ONLY, REMOVE LATER
-    signal env1_lr : std_logic;
-    signal env1_wave : std_logic_vector(2 downto 0);
-    signal env1_res : std_logic := '0'; -- SIMULATION ONLY, REMOVE LATER
-    signal env1_clk_source : std_logic;
-    signal env1_en : std_logic := '0'; -- SIMULATION ONLY, REMOVE LATER
-    signal reg_28_load_en : std_logic; -- this unit only implements register 28, the rest are forwarded to the other units
+    -- control flags managed by and/or routed in/out through this unit
+    signal freq_en : std_logic_vector(5 downto 0); -- frequency enable.
+    signal noise_en : std_logic_vector(5 downto 0); -- noise enable.
+    signal env0_en : std_logic;
+    signal env1_en : std_logic;
     signal enable, sync_rst : std_logic;
-    signal reg_enable : std_logic := '0';
+
+    -- registers
+    signal reg_20_load_en, reg_21_load_en, reg_28_load_en : std_logic; -- this unit only implements a handful of registers, the rest are forwarded to the other units
+    signal reg_enable : std_logic := '0'; -- INITIALISATION REQUIRED ('POWER-ON-RESET').  This is probably the only registered that is really reset at power-on on the real device, rest are uninitialized
     signal reg_sync_rst : std_logic;
+    signal reg_freq_en : std_logic_vector(5 downto 0) := (others => '0'); -- frequency enable.  -- INITIALISATION FOR SIMULATION ONLY, REMOVE LATER
+    signal reg_noise_en : std_logic_vector(5 downto 0) := (others => '0'); -- noise enable.  -- INITIALISATION FOR SIMULATION ONLY, REMOVE LATER
 
     signal a0_wr, d_wr: std_logic;
 
@@ -84,18 +69,6 @@ architecture behaviour of saa1099_digital_output is
     signal osc4_trigger: std_logic;
     signal osc5_output: std_logic;
     signal osc5_trigger: std_logic;  -- unused
-
-    signal freq0_wr, freq1_wr, freq2_wr, freq3_wr, freq4_wr, freq5_wr: std_logic;
-    signal freq0_wr_prev, freq1_wr_prev, freq2_wr_prev, freq3_wr_prev, freq4_wr_prev, freq5_wr_prev: std_logic;
-    signal freq0_wr_pulse, freq1_wr_pulse, freq2_wr_pulse, freq3_wr_pulse, freq4_wr_pulse, freq5_wr_pulse: std_logic;
-    signal oct01_wr, oct23_wr, oct45_wr: std_logic;
-    signal oct01_wr_prev, oct23_wr_prev, oct45_wr_prev: std_logic;
-    signal oct01_wr_pulse, oct23_wr_pulse, oct45_wr_pulse: std_logic;
-    signal env0_wr, env1_wr : std_logic;
-    signal env0_wr_prev, env1_wr_prev : std_logic;
-    signal env0_wr_pulse, env1_wr_pulse : std_logic;
-    signal amp0_wr, amp1_wr, amp2_wr, amp3_wr, amp4_wr, amp5_wr : std_logic;
-    signal noise_sel_wr : std_logic;
 
     signal noise0_output, noise1_output : std_logic;
     signal noise_clks : std_logic_vector(2 downto 0);
@@ -202,7 +175,7 @@ begin
         );
 
     NOISE0: entity work.noise_bitstream
-        generic map (MAPPED_SEL_REGISTER => 20, SEL_IN_UPPER => false)
+        generic map (MAPPED_SEL_REGISTER => 22, SEL_IN_UPPER => false)
         port map (
             clk => clk,
             data => data_latch,
@@ -216,7 +189,7 @@ begin
         );
 
     NOISE1: entity work.noise_bitstream
-        generic map (MAPPED_SEL_REGISTER => 20, SEL_IN_UPPER => true)
+        generic map (MAPPED_SEL_REGISTER => 22, SEL_IN_UPPER => true)
         port map (
             clk => clk,
             data => data_latch,
@@ -232,8 +205,8 @@ begin
     -- mixer is purely combinatoric
     MIXER0 : entity work.mixer
         port map (
-            noise_enable => noise0_en,
-            freq_enable => freq0_en,
+            freq_enable => freq_en(0),
+            noise_enable => noise_en(0),
             env_enable => '0',
             noise_bitstream => noise0_output,
             freq_bitstream => osc0_output,
@@ -242,8 +215,8 @@ begin
 
     MIXER1 : entity work.mixer
         port map (
-            noise_enable => noise1_en,
-            freq_enable => freq1_en,
+            freq_enable => freq_en(1),
+            noise_enable => noise_en(1),
             env_enable => '0',
             noise_bitstream => noise0_output,
             freq_bitstream => osc1_output,
@@ -252,8 +225,8 @@ begin
 
     MIXER2 : entity work.mixer
         port map (
-            noise_enable => noise2_en,
-            freq_enable => freq2_en,
+            freq_enable => freq_en(2),
+            noise_enable => noise_en(2),
             env_enable => env0_en,
             noise_bitstream => noise0_output,
             freq_bitstream => osc2_output,
@@ -262,8 +235,8 @@ begin
 
     MIXER3 : entity work.mixer
         port map (
-            noise_enable => noise3_en,
-            freq_enable => freq3_en,
+            freq_enable => freq_en(3),
+            noise_enable => noise_en(3),
             env_enable => '0',
             noise_bitstream => noise1_output,
             freq_bitstream => osc3_output,
@@ -272,8 +245,8 @@ begin
 
     MIXER4 : entity work.mixer
         port map (
-            noise_enable => noise4_en,
-            freq_enable => freq4_en,
+            freq_enable => freq_en(4),
+            noise_enable => noise_en(4),
             env_enable => '0',
             noise_bitstream => noise1_output,
             freq_bitstream => osc4_output,
@@ -282,8 +255,8 @@ begin
 
     MIXER5 : entity work.mixer
         port map (
-            noise_enable => noise5_en,
-            freq_enable => freq5_en,
+            freq_enable => freq_en(5),
+            noise_enable => noise_en(5),
             env_enable => env1_en,
             noise_bitstream => noise1_output,
             freq_bitstream => osc5_output,
@@ -407,7 +380,7 @@ begin
             a0_pulse => a0_wr,
             output_left => env1l_level_out,
             output_right => env1r_level_out,
-            env_en => env0_en -- output from unit
+            env_en => env1_en -- output from unit
         );
 
     -- env chop is purely combinatoric
@@ -461,6 +434,8 @@ begin
     -- in the same clock cycle, rather than one cycle later.
     write_active <= '1' when (wr_pending_sync(1) = '1' and clear_pending = '0') else '0';
 
+    reg_20_load_en <= '1' when (reg(4 downto 0) = "10100") else '0';
+    reg_21_load_en <= '1' when (reg(4 downto 0) = "10101") else '0';
     reg_28_load_en <= '1' when (reg(4 downto 0) = "11100") else '0';
 
     sync_register_load : process(clk)
@@ -477,10 +452,16 @@ begin
                     -- a0 is high (i.e. register write)
                     reg <= data_latch(4 downto 0); -- higher bits unused; register file repeats according to datasheet
                 else
-                    -- write data value to register.  This unit only implements register 28, the rest are delegated to the other units
+                    -- write data value to register.  This unit only implements a few registers, the rest are delegated to the other units
+                    if reg_20_load_en='1' then
+                        reg_freq_en <= data_latch(5 downto 0);
+                    end if;
+                    if reg_21_load_en='1' then
+                        reg_noise_en <= data_latch(5 downto 0);
+                    end if;
                     if reg_28_load_en='1' then
-                        reg_enable <= d(0);
-                        reg_sync_rst <= d(1);
+                        reg_enable <= data_latch(0);
+                        reg_sync_rst <= data_latch(1);
                     end if;
                 end if;
             end if;
@@ -493,8 +474,10 @@ begin
     a0_wr <= '1' when (write_active = '1' and a0_latch = '1') else '0';
     d_wr <= '1' when (write_active = '1' and a0_latch = '0') else '0';
 
-    -- Combinatorial forwarding/bypass.  This unit only implements enable and sync_rst registers.
+    -- Combinatorial forwarding/bypass.  This unit only implements a few of the overall registers since the rest are delegated to the units themselves.
     enable <= data_latch(0) when (write_active = '1' and reg_28_load_en='1') else reg_enable;
     sync_rst <= data_latch(1) when (write_active = '1' and reg_28_load_en='1') else reg_sync_rst;
+    freq_en <= data_latch(5 downto 0) when (write_active = '1' and reg_20_load_en='1') else reg_freq_en;
+    noise_en <= data_latch(5 downto 0) when (write_active = '1' and reg_21_load_en='1') else reg_noise_en;
 
 end behaviour;
