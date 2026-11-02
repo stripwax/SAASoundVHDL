@@ -41,12 +41,6 @@ architecture behaviour of saa1099_digital_output is
 
     signal write_active : std_logic;
 
-    signal amp0 : std_logic_vector(7 downto 0);
-    signal amp1 : std_logic_vector(7 downto 0);
-    signal amp2 : std_logic_vector(7 downto 0);
-    signal amp3 : std_logic_vector(7 downto 0);
-    signal amp4 : std_logic_vector(7 downto 0);
-    signal amp5 : std_logic_vector(7 downto 0);
     signal freq0_en : std_logic; -- frequency enable
     signal freq1_en : std_logic;
     signal freq2_en : std_logic;
@@ -296,7 +290,7 @@ begin
             mixed => mixer5_out
         );
 
-    AMP_0: entity work.amp_chop
+    AMP0: entity work.amp_chop
         port map (
             data => d,
             reg => reg,
@@ -307,7 +301,7 @@ begin
             output_l => amp0l_out,
             output_r => amp0r_out
         );
-    AMP_1: entity work.amp_chop
+    AMP1: entity work.amp_chop
         port map (
             data => d,
             reg => reg,
@@ -318,7 +312,7 @@ begin
             output_l => amp1l_out,
             output_r => amp1r_out
         );
-    AMP_2: entity work.amp_chop
+    AMP2: entity work.amp_chop
         port map (
             data => d,
             reg => reg,
@@ -329,7 +323,7 @@ begin
             output_l => amp2l_out,
             output_r => amp2r_out
         );
-    AMP_3: entity work.amp_chop
+    AMP3: entity work.amp_chop
         port map (
             data => d,
             reg => reg,
@@ -340,7 +334,7 @@ begin
             output_l => amp3l_out,
             output_r => amp3r_out
         );
-    AMP_4: entity work.amp_chop
+    AMP4: entity work.amp_chop
         port map (
             data => d,
             reg => reg,
@@ -351,7 +345,7 @@ begin
             output_l => amp4l_out,
             output_r => amp4r_out
         );
-    AMP_5: entity work.amp_chop
+    AMP5: entity work.amp_chop
         port map (
             clk => clk,
             data => d,
