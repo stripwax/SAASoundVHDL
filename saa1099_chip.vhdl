@@ -35,9 +35,8 @@ architecture behaviour of saa1099_digital_output is
     -- state machine for bus writes
     signal data_latch : std_logic_vector(7 downto 0);
     signal a0_latch : std_logic;
-    signal wr_pending : std_logic;
-    signal clear_pending : std_logic := '0';
-    signal wr_pending_sync : std_logic_vector(1 downto 0);
+    signal wr_toggle : std_logic := '0';
+    signal wr_pending_sync : std_logic_vector(2 downto 0) := (others => '0');
     signal reg : std_logic_vector(4 downto 0);
     signal write_active : std_logic;
 
@@ -416,23 +415,21 @@ begin
     wr_edge <= (wr_n or cs_n);
 
     -- handle async bus writes and latch the incoming data and address line.
-    -- we pipeline the "write" event via wr_pending/clear_pending and a two-stage buffer (wr_pending_sync)
+    -- we pipeline the "write" event via a short shift buffer (wr_pending_sync) and detect a write via a bit-flip.
     -- the buffer is shifted in the sequential logic to sample the write event and eliminate metastability
-    async_bus_write : process(wr_edge, clear_pending)
+    async_bus_write : process(wr_edge)
     begin
-        if clear_pending = '1' then
-            wr_pending <= '0';
-        elsif rising_edge(wr_edge) then
+        if rising_edge(wr_edge) then
             data_latch <= d;
             a0_latch <= a0;
-            wr_pending <= '1';
+            wr_toggle <= not wr_toggle;
         end if;
     end process async_bus_write;
 
     -- write_active is a signal we set high during the clock cycle that the sequential state 
     -- machine decides to process the write. This is so that connected units can act on the same written data
     -- in the same clock cycle, rather than one cycle later.
-    write_active <= '1' when (wr_pending_sync(1) = '1' and clear_pending = '0') else '0';
+    write_active <= wr_pending_sync(2) xor wr_pending_sync(1);
 
     reg_20_load_en <= '1' when (reg(4 downto 0) = "10100") else '0';
     reg_21_load_en <= '1' when (reg(4 downto 0) = "10101") else '0';
@@ -441,12 +438,10 @@ begin
     sync_register_load : process(clk)
     begin
         if rising_edge(clk) then
-            wr_pending_sync <= wr_pending_sync(0) & wr_pending;
-            clear_pending   <= '0';
+            wr_pending_sync <= wr_pending_sync(1 downto 0) & wr_toggle;
 
             if write_active then
 
-                clear_pending <= '1';
 
                 if a0_latch='1' then
                     -- a0 is high (i.e. register write)
