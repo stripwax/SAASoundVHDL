@@ -127,7 +127,7 @@ begin
         generic map (MAPPED_FREQ_REGISTER => 8, MAPPED_OCT_REGISTER => 16, OCT_IN_UPPER => false)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             octave_clks => octave_clks,
@@ -140,7 +140,7 @@ begin
         generic map (MAPPED_FREQ_REGISTER => 9, MAPPED_OCT_REGISTER => 16, OCT_IN_UPPER => true)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             octave_clks => octave_clks,
@@ -153,7 +153,7 @@ begin
         generic map (MAPPED_FREQ_REGISTER => 10, MAPPED_OCT_REGISTER => 17, OCT_IN_UPPER => false)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             octave_clks => octave_clks,
@@ -166,7 +166,7 @@ begin
         generic map (MAPPED_FREQ_REGISTER => 11, MAPPED_OCT_REGISTER => 17, OCT_IN_UPPER => true)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             octave_clks => octave_clks,
@@ -179,7 +179,7 @@ begin
         generic map (MAPPED_FREQ_REGISTER => 12, MAPPED_OCT_REGISTER => 18, OCT_IN_UPPER => false)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             octave_clks => octave_clks,
@@ -192,7 +192,7 @@ begin
         generic map (MAPPED_FREQ_REGISTER => 13, MAPPED_OCT_REGISTER => 18, OCT_IN_UPPER => true)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             octave_clks => octave_clks,
@@ -205,7 +205,7 @@ begin
         generic map (MAPPED_SEL_REGISTER => 20, SEL_IN_UPPER => false)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             trigger_313 => noise_clks(0),
@@ -219,7 +219,7 @@ begin
         generic map (MAPPED_SEL_REGISTER => 20, SEL_IN_UPPER => true)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             trigger_313 => noise_clks(0),
@@ -291,8 +291,10 @@ begin
         );
 
     AMP0: entity work.amp_chop
+        generic map (MAPPED_REGISTER => 0)
         port map (
-            data => d,
+            clk => clk,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             step_ctr => step_ctr,
@@ -302,8 +304,10 @@ begin
             output_r => amp0r_out
         );
     AMP1: entity work.amp_chop
+        generic map (MAPPED_REGISTER => 1)
         port map (
-            data => d,
+            clk => clk,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             step_ctr => step_ctr,
@@ -313,8 +317,10 @@ begin
             output_r => amp1r_out
         );
     AMP2: entity work.amp_chop
+        generic map (MAPPED_REGISTER => 2)
         port map (
-            data => d,
+            clk => clk,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             step_ctr => step_ctr,
@@ -324,8 +330,10 @@ begin
             output_r => amp2r_out
         );
     AMP3: entity work.amp_chop
+        generic map (MAPPED_REGISTER => 3)
         port map (
-            data => d,
+            clk => clk,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             step_ctr => step_ctr,
@@ -335,8 +343,10 @@ begin
             output_r => amp3r_out
         );
     AMP4: entity work.amp_chop
+        generic map (MAPPED_REGISTER => 4)
         port map (
-            data => d,
+            clk => clk,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             step_ctr => step_ctr,
@@ -346,9 +356,10 @@ begin
             output_r => amp4r_out
         );
     AMP5: entity work.amp_chop
+        generic map (MAPPED_REGISTER => 5)
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             step_ctr => step_ctr,
@@ -361,7 +372,7 @@ begin
     ENV0 : entity work.env
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             osc_pulse => osc1_trigger,
@@ -387,7 +398,7 @@ begin
     ENV1 : entity work.env
         port map (
             clk => clk,
-            data => d,
+            data => data_latch,
             reg => reg,
             wr => d_wr,
             osc_pulse => osc4_trigger,

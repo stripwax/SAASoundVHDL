@@ -28,7 +28,7 @@ entity amp_chop is
     --           test case: try enabling multiple channels with synchronised osc and changing osc levels
     --           test case: try setting 'DAC' mode (env enabled, osc mixer disabled) and changing osc levels AND env leves
     generic (
-        MAPPED_REGISTER : std_logic_vector(4 downto 0)
+        MAPPED_REGISTER : integer
     );
     port(
         clk: in std_logic;
@@ -54,7 +54,7 @@ architecture behaviour of amp_chop is
         signal chop_mask_l, chop_mask_r: std_logic;
 begin
     -- handle register writes
-    load_en <= '1' when (wr = '1' and reg = MAPPED_REGISTER) else '0';
+    load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_REGISTER) else '0';
 
     sync_register_load : process(clk)
     begin   

@@ -77,12 +77,10 @@ entity env is
     -- envelope generator (see data sheet)
     port(
         clk : in std_logic;
-        env_write : in std_logic;
-        env_lr : in std_logic;
-        env_wave : std_logic_vector(2 downto 0);
-        env_res : std_logic;
-        env_clk_source : std_logic;
-        env_en : std_logic;
+        reg: in std_logic_vector(4 downto 0);
+        data: in std_logic_vector(7 downto 0);
+        wr: in std_logic;
+        env_en : out std_logic;
         osc_pulse: in std_logic;
         a0_pulse : in std_logic;
 
@@ -101,7 +99,30 @@ architecture behaviour of env is
     signal halted : std_logic := '1';
     signal env_written, env_written_prev : std_logic := '0';
 
+    signal env_lr : std_logic;
+    signal env_wave : std_logic_vector(2 downto 0);
+    signal env_res : std_logic;
+    signal env_clk_source : std_logic;
+
+
 begin
+    -- handle register writes
+    load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_REGISTER) else '0';
+
+    sync_register_load : process(clk)
+    begin   
+        if rising_edge(clk) then
+            if load_en = '1' then
+                reg_env <= data;
+            end if;
+        end if;
+    end process;
+
+    -- Combinatorial forwarding/bypass
+    env_en <= data(7) when load_en = '1' else reg_env(7);
+    env_wave_buffered <=  <= unsigned(data(3 downto 0)) when load_en = '1' else reg_amplitude_l;
+    amplitude_r <= unsigned(data(7 downto 4)) when load_en = '1' else reg_amplitude_r;
+
     decode_env_write: process(env_write)
     begin
         if rising_edge(env_write) then
