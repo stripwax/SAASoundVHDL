@@ -370,6 +370,7 @@ begin
         );
 
     ENV0 : entity work.env
+        generic map (MAPPED_REGISTER => 24)
         port map (
             clk => clk,
             data => data_latch,
@@ -396,6 +397,7 @@ begin
         );
 
     ENV1 : entity work.env
+        generic map (MAPPED_REGISTER => 25)
         port map (
             clk => clk,
             data => data_latch,

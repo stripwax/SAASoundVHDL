@@ -75,6 +75,9 @@ use IEEE.NUMERIC_STD.all;
 
 entity env is
     -- envelope generator (see data sheet)
+    generic (
+        MAPPED_REGISTER : integer
+    );
     port(
         clk : in std_logic;
         reg: in std_logic_vector(4 downto 0);
@@ -90,20 +93,21 @@ end env;
 
 architecture behaviour of env is
 
-    signal counter: unsigned(4 downto 0) := (others=>'0');  -- only initialise to stop noise in simulation
-    signal env_lr_buffered, env_clk_source_buffered : std_logic := '0';
-    signal env_wave_buffered : std_logic_vector(2 downto 0) := "000";
-    signal reg_env_res : std_logic := '0';
+    signal load_en : std_logic;
+    signal reg_env_lr_buffered, reg_env_clk_source_buffered : std_logic := '0';
+    signal reg_env_wave_buffered : std_logic_vector(2 downto 0) := "000";
+    signal reg_env_resolution : std_logic := '0';
     signal reg_env_en : std_logic := '0';
+
+    signal counter: unsigned(4 downto 0) := (others=>'0');  -- only initialise to stop noise in simulation
     signal counter_output, wav_inverted, wav_repeat : std_logic := '0';
     signal halted : std_logic := '1';
-    signal env_written, env_written_prev : std_logic := '0';
 
+    signal env_lr_buffered, env_clk_source_buffered : std_logic;
+    signal env_wave_buffered : std_logic_vector(2 downto 0);
+    signal env_resolution : std_logic;
     signal env_lr : std_logic;
-    signal env_wave : std_logic_vector(2 downto 0);
-    signal env_res : std_logic;
     signal env_clk_source : std_logic;
-
 
 begin
     -- handle register writes
@@ -113,89 +117,85 @@ begin
     begin   
         if rising_edge(clk) then
             if load_en = '1' then
-                reg_env <= data;
+                reg_env_lr_buffered <= data(0);
+                reg_env_wave_buffered <= data(3 downto 1);
+                reg_env_resolution <= data(4);
+                reg_env_clk_source_buffered <= data(5);
+                reg_env_en <= data(7);
             end if;
         end if;
     end process;
 
     -- Combinatorial forwarding/bypass
-    env_en <= data(7) when load_en = '1' else reg_env(7);
-    env_wave_buffered <=  <= unsigned(data(3 downto 0)) when load_en = '1' else reg_amplitude_l;
-    amplitude_r <= unsigned(data(7 downto 4)) when load_en = '1' else reg_amplitude_r;
+    env_lr_buffered <= data(0) when load_en = '1' else reg_env_lr_buffered;
+    env_wave_buffered <= data(3 downto 1) when load_en = '1' else reg_env_wave_buffered;
+    env_resolution <= data(4) when load_en = '1' else reg_env_resolution;
+    env_clk_source_buffered <= data(5) when load_en = '1' else reg_env_clk_source_buffered;
+    env_en <= data(7) when load_en = '1' else reg_env_en;
 
-    decode_env_write: process(env_write)
-    begin
-        if rising_edge(env_write) then
-            env_wave_buffered <= env_wave;
-            env_lr_buffered <= env_lr;
-            env_clk_source_buffered <= env_clk_source;
-            reg_env_res <= env_res;
-            reg_env_en <= env_en;
-            env_written <= '1';
-        end if;
-    end process;
-    
     process(clk)
         variable trigger : std_logic;
         variable next_effective_counter : unsigned(4 downto 0);
         variable next_counter : unsigned(4 downto 0);
         variable intermediate_out : unsigned(3 downto 0);
         variable calc_output_left : unsigned(3 downto 0);
-        variable env_wave_val : std_logic_vector(2 downto 0);
-        variable env_lr_val : std_logic;
-        variable env_clk_source_val : std_logic;
         variable halted_val : std_logic;
         variable invert_flip : std_logic;
         variable ctr_overflow : std_logic;
         variable invert_value : std_logic;
+        variable env_lr_val : std_logic;
         variable counter_output_val, wav_inverted_val, wav_repeat_val : std_logic;
         variable env_has_written : std_logic;
     begin
 
-        -- use variables to represent the output of the buffered values OR the input (if env_write is strobed)
-        -- which we can use to then load into the buffer for the next clock and/or program the env gen this clock
-        env_wave_val := env_wave_buffered;
-        env_lr_val := env_lr_buffered;
-        env_clk_source_val := env_clk_source_buffered;
         halted_val := halted;
         counter_output_val := counter_output;
         wav_inverted_val := wav_inverted;
         wav_repeat_val := wav_repeat;
+        env_lr_val := env_lr;
 
         next_counter := counter;
-        env_has_written := (env_written and not env_written_prev);
+        env_has_written := load_en;
 
 
         if rising_edge(clk) then
             if env_has_written then
-                halted_val := not reg_env_en;
+                halted_val := not env_en;
             end if;
 
-            trigger := (osc_pulse AND not env_clk_source_val) OR (a0_pulse AND env_clk_source_val);
+            trigger := (osc_pulse AND not env_clk_source_buffered) OR (a0_pulse AND env_clk_source_buffered);
             if (halted_val='0' and trigger='1') then
-                if reg_env_res='0' then
+                if env_resolution='0' then
                     -- 4 bit mode
                     next_counter := counter-1;
                 else
                     next_counter := counter-2;  -- based on my understanding that LSB is still actually preserved when the resolution is changed from 4 to 3 bits (easily confirmed by changing resolution back to 4 bits, in the SAME env wave cycle, there's a SAA test case for that in the .dsk)
                 end if;
             end if;
-            next_effective_counter := (next_counter(4 downto 1)) & (next_counter(0) or reg_env_res);
+            next_effective_counter := (next_counter(4 downto 1)) & (next_counter(0) or env_resolution);
             ctr_overflow := '1' when next_effective_counter="11111" else '0';
             if (not halted and not env_has_written) and ctr_overflow and not wav_repeat then
+                -- position (3) in the datasheet env waveform diagrams, when no write has been actioned: waveform end.
                 -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
                 next_counter := "00000";
                 halted_val := '1';
-            elsif ((halted and env_has_written) or (ctr_overflow and wav_repeat)) then
-                -- process new env instruction here (this corresponds to position(3) or position(4))
-                -- load new wav defn from env_wav:
-                counter_output_val := '0' when env_wave_val(2 downto 1)="00" else '1';
+            elsif ((halted and env_has_written) or (ctr_overflow and (wav_repeat or env_has_written))) then
+                -- process new env instruction here.
+                -- this corresponds to position(3) when a write has been actioned this clock,
+                -- and position(4) both if write has or has not been actioned this clock.
+                -- load new wav defn from env_wav.  If position (4) and NO write has been actioned, the buffered registers are unchanged
+                -- so this just reloads the same waveform to repeat it.  If position (4) and write was actioned this clock, or indeed any earlier clock,
+                -- the buffered registers contain the info to load now.
+                env_clk_source <= env_clk_source_buffered;
+                env_lr_val := env_lr_buffered;
+                env_lr <= env_lr_val;
+                counter_output_val := '0' when env_wave_buffered(2 downto 1)="00" else '1';
                 counter_output <= counter_output_val;
-                wav_inverted_val := '1' when env_wave_val(2 downto 0)="001" or env_wave_val(2 downto 1)="11" else '0';
+                wav_inverted_val := '1' when env_wave_buffered(2 downto 0)="001" or env_wave_buffered(2 downto 1)="11" else '0';
                 wav_inverted <= wav_inverted_val;
-                wav_repeat_val := env_wave_val(0);
+                wav_repeat_val := env_wave_buffered(0);
                 wav_repeat <= wav_repeat_val;
-                invert_flip := '1' when env_wave_val(2 downto 1)="10" else '0';
+                invert_flip := '1' when env_wave_buffered(2 downto 1)="10" else '0';
                 next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
                 -- and, not halted:
                 halted_val := '0';
@@ -205,26 +205,24 @@ begin
                 calc_output_left := "0000";
             else
                 if counter_output_val then
-                    intermediate_out := (next_counter(3 downto 1)) & (next_counter(0) and not reg_env_res);
+                    intermediate_out := (next_counter(3 downto 1)) & (next_counter(0) and not env_resolution);
                 else
                     intermediate_out := "0000";
                 end if;
                 invert_value := wav_inverted_val or next_counter(4);
-                -- question: is the "inverted 0000" (waveform 001) affected by the env_res?  like would the output be treated like 1110 instead of 1111 ?  what happens if you select that waveform and toggle env_res?
-                -- answer: yes! it is!  "inverted 0000" has a reduced output when setting env_res!
-                calc_output_left := intermediate_out xor (("111" & not reg_env_res) and (invert_value & invert_value & invert_value & invert_value));
+                -- question: is the "inverted 0000" (waveform 001) affected by the env_resolution?  like would the output be treated like 1110 instead of 1111 ?  what happens if you select that waveform and toggle env_resolution?
+                -- answer: yes! it is!  "inverted 0000" has a reduced output when setting env_resolution!
+                calc_output_left := intermediate_out xor (("111" & not env_resolution) and (invert_value & invert_value & invert_value & invert_value));
             end if;
 
             output_left <= calc_output_left;
-            -- question: is the right channel of waveform 000, when inverted via env_lv_rl, also affected by the env_res?
-            -- answer: yes! it is!  The right channel has a reduced output when setting env_res!
+            -- question: is the right channel of waveform 000, when inverted via env_lr, also affected by the env_resolution?
+            -- answer: yes! it is!  The right channel has a reduced output when setting env_resolution!
             -- I suppose this makes sense, it's consistent that both left and right channels have the same granularity of output
-            output_right <= calc_output_left xor (("111" & not reg_env_res) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
+            output_right <= calc_output_left xor (("111" & not env_resolution) and (env_lr_val & env_lr_val & env_lr_val & env_lr_val));
             
             counter <= next_counter;
             halted <= halted_val;
-
-            env_written_prev <= env_written;
 
         end if;
 
