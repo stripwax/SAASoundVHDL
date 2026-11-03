@@ -113,6 +113,12 @@ architecture behaviour of env is
 begin
     -- handle register writes
     load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_REGISTER) else '0';
+    -- Combinatorial forwarding/bypass
+    env_lr_buffered <= data(0) when load_en = '1' else reg_env_lr_buffered;
+    env_wave_buffered <= data(3 downto 1) when load_en = '1' else reg_env_wave_buffered;
+    env_resolution <= data(4) when load_en = '1' else reg_env_resolution;
+    env_clk_source_buffered <= data(5) when load_en = '1' else reg_env_clk_source_buffered;
+    env_en <= data(7) when load_en = '1' else reg_env_en;
 
     sync_register_load : process(clk)
     begin   
@@ -126,13 +132,6 @@ begin
             end if;
         end if;
     end process;
-
-    -- Combinatorial forwarding/bypass
-    env_lr_buffered <= data(0) when load_en = '1' else reg_env_lr_buffered;
-    env_wave_buffered <= data(3 downto 1) when load_en = '1' else reg_env_wave_buffered;
-    env_resolution <= data(4) when load_en = '1' else reg_env_resolution;
-    env_clk_source_buffered <= data(5) when load_en = '1' else reg_env_clk_source_buffered;
-    env_en <= data(7) when load_en = '1' else reg_env_en;
 
     process(clk)
         variable trigger : std_logic;
