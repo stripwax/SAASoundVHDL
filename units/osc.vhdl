@@ -68,10 +68,11 @@ begin
     begin   
         if rising_edge(clk) then
             if freq_load_en = '1' then
-                reg_frequency <= frequency;
+                reg_frequency <= unsigned(data);
             end if;
             if oct_load_en = '1' then
-                reg_octave <= octave;
+                reg_octave <= unsigned(data(6 downto 4)) when (oct_load_en ='1' and OCT_IN_UPPER=true) else
+                              unsigned(data(2 downto 0)) when (oct_load_en ='1' and OCT_IN_UPPER=false);
             end if;
         end if;
     end process;
