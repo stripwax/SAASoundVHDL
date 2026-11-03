@@ -58,28 +58,23 @@ begin
     freq_load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_FREQ_REGISTER) else '0';
     oct_load_en <= '1' when (wr = '1' and to_integer(unsigned(reg)) = MAPPED_OCT_REGISTER) else '0';
 
-    sync_register_load : process(clk)
-    begin   
-        if rising_edge(clk) then
-            if freq_load_en = '1' then
-                reg_frequency <= unsigned(data);
-            end if;
-            if oct_load_en = '1' then
-                if OCT_IN_UPPER then
-                    reg_octave <= unsigned(data(6 downto 4));
-                else
-                    reg_octave <= unsigned(data(2 downto 0));
-                end if;
-            end if;
-        end if;
-    end process;
-
     -- Combinatorial forwarding/bypass
     octave <= unsigned(data(6 downto 4)) when (oct_load_en ='1' and OCT_IN_UPPER=true) else
               unsigned(data(2 downto 0)) when (oct_load_en ='1' and OCT_IN_UPPER=false) else
               reg_octave;
     frequency <= unsigned(data) when freq_load_en = '1' else reg_frequency;
 
+    sync_register_load : process(clk)
+    begin   
+        if rising_edge(clk) then
+            if freq_load_en = '1' then
+                reg_frequency <= frequency;
+            end if;
+            if oct_load_en = '1' then
+                reg_octave <= octave;
+            end if;
+        end if;
+    end process;
 
     seq: process(clk)
         variable octave_clk_pulse: std_logic;
