@@ -7,7 +7,7 @@ More recently (although at this point nearly 10 years ago), with some interestin
 previously not analysed that could then be implemented correctly.  Over time this has included valuable insights (i.e. bug reports!) from far and wide.
 My desire (with this project) is to convert this into an equivalent gate-level implementation.
 
-SAASound is currently the most up-to-date, tested, and comprehensive, SAA-1099 emulation library available, to my knowledge.  However it is software-only , hence this project
+https://github.com/stripwax/SAASound is currently the most up-to-date, tested, and comprehensive, SAA-1099 emulation library available, to my knowledge.  However it is software-only , hence this SAASoundVHDL spinoff project.
 
 # Aims
 * VHDL for SAA1099 core (FPGA platform not decided yet)
@@ -23,7 +23,7 @@ SAASound is currently the most up-to-date, tested, and comprehensive, SAA-1099 e
 
 * ZXUNO core SAA1099 is 9 years old at time of writing : https://github.com/zxdos/zxuno/blob/master/cores/SamCoupe/saa1099.v
 * MIST core SAA1099 9 years old at time of writing : https://github.com/sorgelig/SAMCoupe_MIST/blob/master/saa1099.sv  (even though based in-part on my SAASound, it does not include latest fixes)
-* Both don't appear to be validated (test cases), and/or the test case validation is not documented  [please correct me if I'm wrong on this point!]
+* Both don't appear to be validated (test cases), and/or the test case validation is not documented  (please correct me if I'm wrong on this point!)
 * Both don't implement the DTACK output. Not relevant afaik for SAM Coupé emulation but maybe important for other devices, at least according to SAA datasheets.  Relevant for the aim for physical device replacement, certainly.
 * My SAASound has had numerous features and fixes applied in the intervening periods i.e. newer than ZXUNO and MIST cores - in particular to envelope generator logic, sync logic, edge-cases around manual clocking, and accurate amplitude and noise mixing logic. The likelihood at this point is that both the above cores would have emulation defects that have since been resolved already in SAASound (SimCoupé).
 
