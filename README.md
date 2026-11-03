@@ -33,6 +33,7 @@ My desire (with this project) is to convert this into an equivalent gate-level i
 * SAA1099Tracker (https://saa1099tracker.borik.net/ and https://github.com/mborik/SAA1099Tracker) which uses a reworked version (in JavaScript) of my SAASound code for its core engine, but an older version of it.
 
 # Other hardware implementations:
-* Some discussion about SAA1099 module in Next core from 2021: https://www.worldofsam.org/forum/2021-05-18/1973#comment-990  (and demo here https://www.youtube.com/watch?v=SQW9XDvAI5Y )  .  What core/vhdl is this actually using??
+* Some discussion about SAA1099 module in Next core from 2021: https://www.worldofsam.org/forum/2021-05-18/1973#comment-990  (and demo here https://www.youtube.com/watch?v=SQW9XDvAI5Y )  .  What core/vhdl is this actually using??  Believed derived from the NGo core which is derived from the ZXUNO core which is derived from a ten-year-old version of SAASound that has known bugs.
 * Of course, also discussion + speculation about SAA1099 module in the upcoming SAM Coupé core in Next KS3 due ~ Feb 2026?
-* 
+* * Update: I am discussion with the SpexNext team about incorporating SAASoundVHDL into the official SAM Coupé core.
+
