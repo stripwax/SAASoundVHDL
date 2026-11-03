@@ -181,7 +181,7 @@ begin
                 -- waveform was running, has reached end, so is now done, and state machine now halts.  a subequent env_write will restart (assuming env_en is set)
                 next_counter := "00000";
                 halted_val := '1';
-            elsif ((halted and env_data_waiting_in_buffer_val) or (ctr_overflow and wav_repeat)) then
+            elsif ((halted and not halted_val and env_data_waiting_in_buffer_val) or (not halted and ctr_overflow and wav_repeat)) then
                 -- process new env instruction here.
                 -- this corresponds to position(3) when a write has been actioned this clock,
                 -- and position(4) both if write has or has not been actioned this clock.
@@ -199,11 +199,17 @@ begin
                 wav_repeat <= wav_repeat_val;
                 invert_flip := '1' when env_wave_buffered(2 downto 1)="10" else '0';
                 next_counter := invert_flip & "1111";  -- interesting here.. what actually happens if we go through one complete wave using manual (a0) trigger, starting in 4-bit mode but changing to 3-bit mode half way, and then rerun a second time here and THEN change back to 4-bit mode half way through the second cycle?  We should be able to see if we actually preserved the LSB when counter was reset, or if LSB was reset to 0 because we reset the counter when still in 3-bit mode!!
-                -- and, not halted:
-                halted_val := '0';
+                -- and no data in buffer now
+                env_data_waiting_in_buffer_val := '0';
+            elsif (halted and halted_val and env_data_waiting_in_buffer_val) then
+                -- this occurs if the env generator was halted, and we did another write (so data in buffer), and the new write has env generator disabled
+                -- (regardless of whether it was disabled before, or was enabled before but just played to completion and is now halted)
+                -- either way: we've done everything we need to (disabled the env generator) and there is no data waiting in buffer now.
                 -- and no data in buffer now
                 env_data_waiting_in_buffer_val := '0';
             end if;
+            -- else:  anything not covered by the above means the env generator was enabled, is still enabled, and either hasn't reach point (3) or point (4)
+            -- so the data in the buffer remains in the buffer waiting to be acted upon later when get to point (3) or (4)
 
             if halted_val then
                 calc_output_left := "0000";
