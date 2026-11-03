@@ -37,5 +37,5 @@ https://github.com/stripwax/SAASound is currently the most up-to-date, tested, a
 # Other hardware implementations:
 * Some discussion about SAA1099 module in Next core from 2021: https://www.worldofsam.org/forum/2021-05-18/1973#comment-990  (and demo here https://www.youtube.com/watch?v=SQW9XDvAI5Y )  .  What core/vhdl is this actually using??  Believed derived from the NGo core which is derived from the ZXUNO core which is derived from a ten-year-old version of SAASound that has known bugs.
 * Of course, also discussion + speculation about SAA1099 module in the upcoming SAM Coupé core in Next KS3 due ~ Feb 2026?
-* * Update: I am discussion with the SpexNext team about incorporating SAASoundVHDL into the official SAM Coupé core.
+* * Update: I am in discussion with the SpecNext team about incorporating SAASoundVHDL into the official SAM Coupé core.
 
