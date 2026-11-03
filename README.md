@@ -7,6 +7,8 @@ More recently (although at this point nearly 10 years ago), with some interestin
 previously not analysed that could then be implemented correctly.  Over time this has included valuable insights (i.e. bug reports!) from far and wide.
 My desire (with this project) is to convert this into an equivalent gate-level implementation.
 
+SAASound is currently the most up-to-date, tested, and comprehensive, SAA-1099 emulation library available, to my knowledge.  However it is software-only , hence this project
+
 # Aims
 * VHDL for SAA1099 core (FPGA platform not decided yet)
 * Test cases
@@ -23,7 +25,7 @@ My desire (with this project) is to convert this into an equivalent gate-level i
 * MIST core SAA1099 9 years old at time of writing : https://github.com/sorgelig/SAMCoupe_MIST/blob/master/saa1099.sv  (even though based in-part on my SAASound, it does not include latest fixes)
 * Both don't appear to be validated (test cases), and/or the test case validation is not documented  [please correct me if I'm wrong on this point!]
 * Both don't implement the DTACK output. Not relevant afaik for SAM Coupé emulation but maybe important for other devices, at least according to SAA datasheets.  Relevant for the aim for physical device replacement, certainly.
-* My SAASound has had numerous features and fixes applied in the intervening periods i.e. newer than ZXUNO and MIST cores - in particular to envelope generator logic, sync logic, edge-cases around manual clocking, and accurate amplitude and noise mixing logic. The likelihood at this point is that both the above cores would have emulation defects that have since been resolved already in SAASound (SimCoupé) .  SAASound is there currently the most up-to-date, tested, and comprehensive, SAA-1099 emulation library available.  However it is software-only , hence this project
+* My SAASound has had numerous features and fixes applied in the intervening periods i.e. newer than ZXUNO and MIST cores - in particular to envelope generator logic, sync logic, edge-cases around manual clocking, and accurate amplitude and noise mixing logic. The likelihood at this point is that both the above cores would have emulation defects that have since been resolved already in SAASound (SimCoupé).
 
 # Other software emulators:
 * Software emulation for CMS in DOSBox is missing a lot of standard features that even older versions of SAASound implemented out-of-the-box . However DOSBox's implementation tries to model the 8MHz bitstream output, which is more like a hardware simulator than an audio emulator (so - in theory - could match a real SAA1099 bit-for-bit ; but in practice it does not)
