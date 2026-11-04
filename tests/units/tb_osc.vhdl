@@ -44,9 +44,9 @@ architecture behaviour of tb_osc is
                          ) is
     begin
         for x in 1 to n loop
-            m_clk <= '1';
-            wait for 62.5 ns;
             m_clk <= '0';
+            wait for 62.5 ns;
+            m_clk <= '1';
             wait for 62.5 ns;
         end loop;
     end;
@@ -58,12 +58,18 @@ architecture behaviour of tb_osc is
                                        signal m_clk: out std_logic 
                                       ) is
     begin
+        m_clk <= '0';
+        wait for 20 ns;
         m_data <= freq;
         m_reg <= FREQ_REG;
         m_wr <= '1';
-        wait_n_clks(1, m_clk);
+        wait for 32.5 ns;
+        m_clk <= '1';
+        wait for 20 ns;
         m_wr <= '0';
         m_data <= "XXXXXXXX";
+        m_reg <= "XXXXX";
+        wait for 32.5 ns;
     end;
 
     procedure write_octave_register(constant oct: in std_logic_vector(2 downto 0);
@@ -73,12 +79,18 @@ architecture behaviour of tb_osc is
                                     signal m_clk: out std_logic 
                                    ) is
     begin
+        m_clk <= '0';
+        wait for 20 ns;
         m_data <= "XXXXX" & oct;
         m_reg <= OCTAVE_REG;
         m_wr <= '1';
-        wait_n_clks(1, m_clk);
+        wait for 32.5 ns;
+        m_clk <= '1';
+        wait for 20 ns;
         m_wr <= '0';
         m_data <= "XXXXXXXX";
+        m_reg <= "XXXXX";
+        wait for 32.5 ns;
     end;
 
     procedure wait_for_octave_counter(constant n: integer;
@@ -105,15 +117,18 @@ architecture behaviour of tb_osc is
                                signal m_clk: out std_logic;
                                signal m_output: in std_logic
                               ) is
+        variable output_before : std_logic;
     begin
         for i in 1 to count loop
+            output_before := m_output;
             for c in 1 to cycles loop
+                m_clk <= '0';
+                wait for 62.5 ns;
+                assert m_output = output_before;
                 m_clk <= '1';
                 wait for 62.5 ns;
                 assert m_output = expected report "oh" & INTEGER'IMAGE(i) & " " & INTEGER'IMAGE(c);
-                m_clk <= '0';
-                wait for 62.5 ns;
-                assert m_output = expected;
+                output_before := expected;
             end loop;
         end loop;
     end;
@@ -372,7 +387,7 @@ begin
     check_osc_output(234, cycles, '0', clk, output);   -- rest of THIS half-wave unchanged  (234+1+123 = 358)
     -- freq and osc now kick in together: after that previous half-wave finished, freq reloaded and now takes effect:
     cycles := 8;
-    run_osc_output_checks(3, 307, cycles, '1', clk, output); -- 358 = the new frequency
+    run_osc_output_checks(3, 307, cycles, '1', clk, output); -- 307 = the new frequency
 
 
     --  Wait forever; this will finish the simulation.
