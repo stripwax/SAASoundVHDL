@@ -361,6 +361,12 @@ def sample_signal(transitions, start_time, end_time, sample_rate):
 
     amplitudes = values[indices] * 16.0
 
+    # Zero out samples before the first transition — searchsorted returns 0
+    # for those, and clip forces them to index 0, incorrectly using the
+    # first transition's value for samples that precede it.
+    before_first = sample_times < times[0]
+    amplitudes[before_first] = 0.0
+
     return amplitudes
 
 
