@@ -26,23 +26,26 @@ entity tb_noise_bitstream is
 end tb_noise_bitstream;
 
 architecture behav of tb_noise_bitstream is
-  --  Declaration of the component that will be instantiated.
-  component noise_bitstream
-  port (
-    clk: in std_logic;
-    trigger_313, trigger_156, trigger_76, trigger_osc : in std_logic;
-    enabled: in std_logic_vector(1 downto 0);
-    bitstream: out std_logic
-    );
-  end component;
-
-  --  Specifies which entity is bound with the component.
-  for noise_bitstream_0: noise_bitstream use entity work.noise_bitstream;
   signal clk, trigger_313, trigger_156, trigger_76, trigger_osc, bitstream : std_logic;
-  signal enabled : std_logic_vector(1 downto 0);
+  signal data : std_logic_vector(7 downto 0);
+  signal reg : std_logic_vector(4 downto 0);
+  signal wr : std_logic;
 begin
   --  Component instantiation.
-  noise_bitstream_0: noise_bitstream port map (clk => clk, trigger_313 => trigger_313, trigger_156 => trigger_156, trigger_76 => trigger_76, trigger_osc => trigger_osc, enabled => enabled, bitstream => bitstream);
+    --  Component instantiation.
+    noise_bitstream_0: entity work.noise_bitstream
+    generic map (MAPPED_SEL_REGISTER => 21, SEL_IN_UPPER => false)
+    port map (
+        clk => clk,
+        data => data,
+        reg => reg,
+        wr => wr,
+        trigger_313 => trigger_313,
+        trigger_156 => trigger_156,
+        trigger_76 => trigger_76,
+        trigger_osc => trigger_osc,
+        bitstream => bitstream
+    );
 
   --  This process does the real job.
   process
@@ -58,23 +61,38 @@ begin
     -- check initial values for first few
     -- with trigger fully enabled just to step each clock
     trigger_313 <= '1';
-    enabled <= "00";
+    data <= "XXXXXX00";
+    reg <= "10101";
+    wr <= '1';
     for i in expected_1'range loop
       clk <= '0';
       wait for 1 ns;
       clk <= '1';
       wait for 1 ns;
       assert bitstream = expected_1(i);
+      wr <= '0';
+      data <= "XXXXXXXX";
     end loop;
 
     prev := bitstream;
 
     -- check values only step when the correct trigger matches the enabled flag
+    clk <= '0';
+    assert bitstream = prev;
+    trigger_313 <= '0';
+    data <= "XXXXXX00";
+    wr <= '1';
+    wait for 1 ns;
+    assert bitstream = prev;
+    clk <= '1';
+    wait for 1 ns;
+    wr <= '0';
+    data <= "XXXXXXXX";
+    assert bitstream = prev;
     for i in expected_2'range loop
       clk <= '0';
       assert bitstream = prev;
       trigger_313 <= '0';
-      enabled <= "00";
       wait for 1 ns;
       assert bitstream = prev;
       clk <= '1';
@@ -110,11 +128,22 @@ begin
       prev := bitstream;
     end loop;
 
+    clk <= '0';
+    assert bitstream = prev;
+    trigger_156 <= '0';
+    data <= "XXXXXX01";
+    wr <= '1';
+    wait for 1 ns;
+    assert bitstream = prev;
+    clk <= '1';
+    wait for 1 ns;
+    wr <= '0';
+    data <= "XXXXXXXX";
+    assert bitstream = prev;
     for i in expected_3'range loop
       clk <= '0';
       assert bitstream = prev;
       trigger_156 <= '0';
-      enabled <= "01";
       wait for 1 ns;
       assert bitstream = prev;
       clk <= '1';
@@ -150,11 +179,22 @@ begin
       prev := bitstream;
     end loop;
 
+    clk <= '0';
+    assert bitstream = prev;
+    trigger_76 <= '0';
+    data <= "XXXXXX10";
+    wr <= '1';
+    wait for 1 ns;
+    assert bitstream = prev;
+    clk <= '1';
+    wait for 1 ns;
+    wr <= '0';
+    data <= "XXXXXXXX";
+    assert bitstream = prev;
     for i in expected_4'range loop
       clk <= '0';
       assert bitstream = prev;
       trigger_76 <= '0';
-      enabled <= "10";
       wait for 1 ns;
       assert bitstream = prev;
       clk <= '1';
@@ -190,11 +230,22 @@ begin
       prev := bitstream;
     end loop;
 
+    clk <= '0';
+    assert bitstream = prev;
+    trigger_osc <= '0';
+    data <= "XXXXXX11";
+    wr <= '1';
+    wait for 1 ns;
+    assert bitstream = prev;
+    clk <= '1';
+    wait for 1 ns;
+    wr <= '0';
+    data <= "XXXXXXXX";
+    assert bitstream = prev;
     for i in expected_5'range loop
       clk <= '0';
       assert bitstream = prev;
       trigger_osc <= '0';
-      enabled <= "11";
       wait for 1 ns;
       assert bitstream = prev;
       clk <= '1';
