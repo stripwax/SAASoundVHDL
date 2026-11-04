@@ -164,7 +164,7 @@ begin
                 halted_val := not env_en;
             end if;
 
-            trigger := (osc_pulse AND not env_clk_source) OR (a0_pulse AND env_clk_source);
+            trigger := '1' when (osc_pulse='1' AND env_clk_source='0') OR (a0_pulse='1' AND to_integer(unsigned(reg))=MAPPED_REGISTER AND env_clk_source='1') else '0';
             if (halted_val='0' and trigger='1') then
                 if env_resolution='0' then
                     -- 4 bit mode

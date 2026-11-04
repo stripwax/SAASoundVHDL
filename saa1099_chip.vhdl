@@ -38,6 +38,7 @@ architecture behaviour of saa1099_digital_output is
     signal wr_toggle : std_logic := '0';
     signal wr_pending_sync : std_logic_vector(2 downto 0) := (others => '0');
     signal reg : std_logic_vector(4 downto 0);
+    signal reg_imm : std_logic_vector(4 downto 0);
     signal write_active : std_logic;
 
     -- control flags managed by and/or routed in/out through this unit
@@ -100,7 +101,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
@@ -113,7 +114,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
@@ -126,7 +127,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
@@ -139,7 +140,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
@@ -152,7 +153,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
@@ -165,7 +166,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             octave_clks => octave_clks,
             sync => sync_rst,
@@ -178,7 +179,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             trigger_313 => noise_clks(0),
             trigger_156 => noise_clks(1),
@@ -192,7 +193,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             trigger_313 => noise_clks(0),
             trigger_156 => noise_clks(1),
@@ -267,7 +268,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             step_ctr => step_ctr,
             input => mixer0_out,
@@ -280,7 +281,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             step_ctr => step_ctr,
             input => mixer1_out,
@@ -293,7 +294,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             step_ctr => step_ctr,
             input => mixer2_out,
@@ -306,7 +307,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             step_ctr => step_ctr,
             input => mixer3_out,
@@ -319,7 +320,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             step_ctr => step_ctr,
             input => mixer4_out,
@@ -332,7 +333,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             step_ctr => step_ctr,
             input => mixer5_out,
@@ -346,7 +347,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             osc_pulse => osc1_trigger,
             a0_pulse => a0_wr,
@@ -373,7 +374,7 @@ begin
         port map (
             clk => clk,
             data => data_latch,
-            reg => reg,
+            reg => reg_imm,
             wr => d_wr,
             osc_pulse => osc4_trigger,
             a0_pulse => a0_wr,
@@ -474,5 +475,6 @@ begin
     sync_rst <= data_latch(1) when (d_wr = '1' and reg_28_load_en='1') else reg_sync_rst;
     freq_en <= data_latch(5 downto 0) when (d_wr = '1' and reg_20_load_en='1') else reg_freq_en;
     noise_en <= data_latch(5 downto 0) when (d_wr = '1' and reg_21_load_en='1') else reg_noise_en;
+    reg_imm <= data_latch(4 downto 0) when (a0_wr = '1') else reg;
 
 end behaviour;

@@ -1,0 +1,142 @@
+# Enable triangle wave for both env generators
+# Clock them 'external' i.e. writes to a0 (register)
+# View the output of both env generators (audio is muted but you can inspect the env.output signals)
+# You should see env0 clocked slowly, then env1 clocked slowly, then env1 clocked fast, then env0 clocked fast, then both envs clocked up at the same speed, up to peak of the waveform
+# Then both clocked slowly down half way and env0 then clocked fast again until the triangle repeats
+
+0 28
+0 28 2
+0 0
+0 0 0
+0 1
+0 1 0
+0 2
+0 2 0
+0 3
+0 3 0
+0 4
+0 4 0
+0 5
+0 5 0
+0 6
+0 6 0
+0 7
+0 7 0
+0 8
+0 8 0
+0 9
+0 9 0
+0 10
+0 10 0
+0 11
+0 11 0
+0 12
+0 12 0
+0 13
+0 13 0
+0 14
+0 14 0
+0 15
+0 15 0
+0 16
+0 16 0
+0 17
+0 17 0
+0 18
+0 18 0
+0 19
+0 19 0
+0 20
+0 20 0
+0 21
+0 21 0
+0 22
+0 22 0
+0 23
+0 23 0
+0 24
+0 24 0
+0 25
+0 25 0
+0 26
+0 26 0
+0 27
+0 27 0
+0 28
+0 28 1
+1 16
+1 16 240
+1 2
+1 2 255
+2 17
+2 17 7
+2 10
+2 10 255
+2 20
+2 20 4
+1000 24
+1000 24 170
+1000 25
+1000 25 170
+1200 24
+1300 24
+1400 24
+1600 25
+1700 25
+1800 25
+2001 25
+2002 25
+2003 25
+2004 25
+2005 25
+2006 24
+2007 24
+2008 24
+2009 24
+2010 24
+2100 24
+2100 25
+2200 24
+2200 25
+2300 24
+2300 25
+2400 24
+2400 25
+2500 24
+2500 25
+2600 24
+2600 25
+2700 24
+2700 25
+2800 24
+2800 25
+3000 24
+3000 25
+3200 24
+3200 25
+3400 24
+3400 25
+3600 24
+3600 25
+3800 24
+3800 25
+4000 24
+4000 25
+4200 24
+4200 25
+4401 24
+4402 24
+4403 24
+4404 24
+4405 24
+4406 24
+4407 24
+4408 24
+4409 24
+4410 24
+4411 24
+4412 24
+4413 24
+4414 24
+4415 24
+4416 24
