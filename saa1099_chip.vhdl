@@ -178,7 +178,7 @@ begin
         generic map (MAPPED_SEL_REGISTER => 22, SEL_IN_UPPER => false)
         port map (
             clk => clk,
-            data => data_latch,
+            data => "XXXXXX" & data_latch(1 downto 0),
             reg => reg_imm,
             wr => d_wr,
             trigger_313 => noise_clks(0),
@@ -192,7 +192,7 @@ begin
         generic map (MAPPED_SEL_REGISTER => 22, SEL_IN_UPPER => true)
         port map (
             clk => clk,
-            data => data_latch,
+            data => "XX" & data_latch(5 downto 4) & "XXXX",
             reg => reg_imm,
             wr => d_wr,
             trigger_313 => noise_clks(0),
@@ -346,7 +346,7 @@ begin
         generic map (MAPPED_REGISTER => 24)
         port map (
             clk => clk,
-            data => data_latch,
+            data => data_latch(7) & "X" & data_latch(5 downto 0),
             reg => reg_imm,
             wr => d_wr,
             osc_pulse => osc1_trigger,
@@ -373,7 +373,7 @@ begin
         generic map (MAPPED_REGISTER => 25)
         port map (
             clk => clk,
-            data => data_latch,
+            data => data_latch(7) & "X" & data_latch(5 downto 0),
             reg => reg_imm,
             wr => d_wr,
             osc_pulse => osc4_trigger,
