@@ -82,6 +82,7 @@ begin
         variable load: std_logic;
         variable overflow: std_logic;
         variable next_counter: unsigned(8 downto 0);
+        variable count_en: std_logic;
     begin
 
         if rising_edge(clk) then
@@ -91,43 +92,50 @@ begin
             -- writing to octave register triggers a copy (latch) of the frequency register
             -- which enables the next period to set the octave and frequency at the same time (no glitch)
             -- setting frequency after that will be ignored until the next half cycle
+            -- QUESTION: what happens if the octave data is written in exactly the same cycle that the osc counter overflows?
+            -- Currently I skip this until the next half cycle but that might not be correct.  Quite hard to determine experimentally
+            -- since we don't exactly know which clock cycle the write really latches..
             if oct_load_en='1' or sync='1' then
                 latched_freq <= frequency;
             end if;
 
-            trigger <= '0'; -- assume not triggered, but clauses below will pulse this as required
-
             octave_clk_pulse := octave_clks(7-to_integer(latched_octave));
 
             load := '0';
+            count_en := not sync and octave_clk_pulse;
             overflow := '0';
-            next_counter := counter + 1;
-            if (octave_clk_pulse='1') and (next_counter="000000000") then
+            next_counter := counter;
+            if (octave_clk_pulse='1') and (counter="111111111") then
                 -- since this doesn't depend on sync='0', this is what reproduces the "8mhz noise when sync'd" bug (feature?)
                 overflow := '1';
             end if;
-            trigger <= overflow; -- this is the output that is wired up to noise gen and env gen.  QUESTION does env gen also have an equivalent  "8mhz when sync'd" bug?  ANSWER yes, and what an excellent discovery!
 
             if sync='1' then
-                counter <= "111111111"; -- rearmed so that next tick after sync has been cleared will trigger the overflow condition and flip output and reload the counter
-                --counter <= "0" & latched_freq;
+                next_counter := "111111111"; -- rearmed so that next tick after sync has been cleared will trigger the overflow condition and flip output and reload the counter
                 load := '1';
                 output <= '0';  -- I'm fairly certain this is true, but need to check test case: FRED space demo.  QUESTION: does output immediately flip to 1 when sync disabled?
             elsif overflow='1' then
-                -- this marks the end of a (half) wave.  (or sync/reset flag is set)
-                --counter <= "0" & latched_freq;
-                counter <= "0" & latched_freq + 1;
+                -- this marks the end of a (half) wave
+                -- note that this is loaded with the 'old' (incoming) latched_freq
+                next_counter := "0" & latched_freq;
                 output <= not output;
                 -- reload frequency/octave registers now for next half wave because they may have changed
+                -- (and note that this affects the half cycle AFTER next since we just reloaded counter with the 'old' freq)
                 load := '1';
-            elsif octave_clk_pulse='1' then
-                counter <= next_counter;
             end if;
 
             if load='1' then
                 latched_freq <= frequency;
                 latched_octave <= octave;
             end if;
+
+            if count_en='1' then
+                counter <= next_counter + 1;
+            else
+                counter <= next_counter;
+            end if;
+
+            trigger <= overflow; -- this is the output that is wired up to noise gen and env gen.  QUESTION does env gen also have an equivalent  "8mhz when sync'd" bug?  ANSWER yes, and what an excellent discovery!
 
         end if;
 
